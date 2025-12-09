@@ -1,4 +1,4 @@
-const ACCESS_TOKEN = 'gggg';
+const ACCESS_TOKEN = eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_ImGjc66YvP8x8XBTtbUkFWsBeWY;
 
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('downloadBtn');
@@ -171,4 +171,5 @@ async function downloadSelectedImages() {
     setStatus(msg);
   }
 }
+
 
