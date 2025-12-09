@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Image Downloader (test)</title>
+  <title>Image Downloader</title>
   <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     body {
@@ -24,26 +24,193 @@
   </style>
 </head>
 <body>
-  <h3>Download selected images (TEST v1)</h3>
-  <p>1. Выдели на борде картинки<br>2. Нажми кнопку ниже</p>
-  <button id="downloadBtn">TEST: click me</button>
+  <h3>Download selected images</h3>
+  <p>1. Выдели на борде нужные картинки<br>2. Нажми кнопку ниже</p>
+  <button id="downloadBtn">Download selected images</button>
   <div id="status"></div>
 
   <script>
+    // 🔑 СЮДА ВСТАВЬ СВОЙ РЕАЛЬНЫЙ ТОКЕН В КАВЫЧКАХ
+    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_ImGjc66YvP8x8XBTtbUkFWsBeWY';
+
     document.addEventListener('DOMContentLoaded', () => {
       const statusEl = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
 
       function setStatus(text) {
-        console.log('[ImageDownloader TEST]', text);
+        console.log('[ImageDownloader]', text);
         statusEl.textContent = text;
       }
 
-      setStatus('Панель загружена. Нажми кнопку — должен быть alert.');
+      async function downloadSelectedImages() {
+        if (!ACCESS_TOKEN || ACCESS_TOKEN.startsWith('miro1_') === false) {
+          setStatus('Проверь ACCESS_TOKEN в panel.html – он должен быть строкой вида miro1_....');
+          return;
+        }
+
+        try {
+          setStatus('Читаю информацию о борде...');
+          const boardInfo = await miro.board.getInfo();
+          const boardId = boardInfo.id;
+          console.log('Board info:', boardInfo);
+          setStatus('Борд: ' + boardId + '\nЧитаю выделение...');
+
+          const selection = await miro.board.getSelection();
+          console.log('Selection:', selection);
+
+          if (!selection.length) {
+            setStatus('Ничего не выделено на борде.');
+            return;
+          }
+
+          const images = selection.filter(item => item.type === 'image');
+          console.log('Images in selection:', images);
+
+          if (!images.length) {
+            setStatus('Во выделении нет image-элементов.');
+            return;
+          }
+
+          setStatus(`Найдено изображений: ${images.length}. Запрашиваю данные через REST API...`);
+
+          const downloaded = [];
+          const errors = [];
+
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i];
+            const prefix = `(${i + 1}/${images.length}) [${img.id}]`;
+
+            try {
+              setStatus(`${prefix} Получаю item через /items/{id}...`);
+
+              // 1) Получаем item с REST API: /v2/boards/{boardId}/items/{itemId}
+              const metaResp = await fetch(
+                `https://api.miro.com/v2/boards/${boardId}/items/${img.id}`,
+                {
+                  headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                  },
+                },
+              );
+
+              if (!metaResp.ok) {
+                const txt = await metaResp.text();
+                console.error('Item meta error', metaResp.status, txt);
+                errors.push(`${prefix} Ошибка meta ${metaResp.status}`);
+                continue;
+              }
+
+              const metaJson = await metaResp.json();
+              console.log('Item meta:', metaJson);
+
+              const imageUrl = metaJson?.data?.imageUrl;
+              if (!imageUrl) {
+                console.warn('Нет data.imageUrl для', img.id, metaJson);
+                errors.push(`${prefix} Нет imageUrl в data`);
+                continue;
+              }
+
+              // 2) Получаем одноразовый download URL: format=original, redirect=false
+              setStatus(`${prefix} Получаю download URL...`);
+
+              const urlObj = new URL(imageUrl);
+              urlObj.searchParams.set('format', 'original');
+              urlObj.searchParams.set('redirect', 'false');
+
+              const resourceResp = await fetch(urlObj.toString(), {
+                headers: {
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                },
+              });
+
+              if (!resourceResp.ok) {
+                const txt = await resourceResp.text();
+                console.error('Resource error', resourceResp.status, txt);
+                errors.push(`${prefix} Ошибка resource ${resourceResp.status}`);
+                continue;
+              }
+
+              const resourceJson = await resourceResp.json();
+              console.log('Resource json:', resourceJson);
+
+              const downloadUrl = resourceJson.url;
+              if (!downloadUrl) {
+                console.warn('Нет поля url в resourceJson', resourceJson);
+                errors.push(`${prefix} В ответе resource нет url`);
+                continue;
+              }
+
+              // 3) Качаем файл
+              setStatus(`${prefix} Скачиваю файл...`);
+
+              const fileResp = await fetch(downloadUrl);
+              if (!fileResp.ok) {
+                const txt = await fileResp.text();
+                console.error('Download error', fileResp.status, txt);
+                errors.push(`${prefix} Ошибка download ${fileResp.status}`);
+                continue;
+              }
+
+              const blob = await fileResp.blob();
+              const blobUrl = URL.createObjectURL(blob);
+
+              const extFromType = (() => {
+                const ct = fileResp.headers.get('Content-Type') || '';
+                if (ct.includes('jpeg')) return 'jpg';
+                if (ct.includes('png')) return 'png';
+                if (ct.includes('gif')) return 'gif';
+                if (ct.includes('svg')) return 'svg';
+                if (ct.includes('webp')) return 'webp';
+                return 'bin';
+              })();
+
+              const title = (metaJson.title && metaJson.title.trim()) || '';
+              const fileName =
+                (title ? title : `miro_image_${i.toString().padStart(3, '0')}`) +
+                '.' + extFromType;
+
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(blobUrl);
+
+              downloaded.push(fileName);
+            } catch (e) {
+              console.error('Unexpected error for image', img.id, e);
+              errors.push(`${prefix} Неожиданная ошибка`);
+            }
+          }
+
+          if (downloaded.length) {
+            let msg = `Готово. Скачано файлов: ${downloaded.length}.`;
+            if (errors.length) {
+              msg += '\nНо были ошибки:\n' + errors.join('\n');
+            }
+            setStatus(msg);
+          } else {
+            let msg = 'Не получилось скачать ни одной картинки :(';
+            if (errors.length) {
+              msg += '\nПодробности:\n' + errors.join('\n');
+            }
+            setStatus(msg);
+          }
+        } catch (err) {
+          console.error('Fatal error:', err);
+          setStatus('Неожиданная ошибка (см. консоль панели): ' + (err.message || err));
+        }
+      }
+
+      setStatus('Готово к работе. Выдели картинки на борде и нажми кнопку.');
+      console.log('[ImageDownloader] panel loaded');
 
       btn.addEventListener('click', () => {
-        setStatus('Кнопка нажата (см. alert)');
-        alert('КНОПКА НАЖАТА (это тест, без Miro API)');
+        console.log('[ImageDownloader] button clicked');
+        downloadSelectedImages();
       });
     });
   </script>
