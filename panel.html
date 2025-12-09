@@ -43,8 +43,9 @@
       }
 
       async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN || !ACCESS_TOKEN.startsWith('miro1_')) {
-          setStatus('Проверь ACCESS_TOKEN в panel.html – он должен быть строкой вида miro1_....');
+        // Минимальная проверка: просто не пускать, если токен пустой
+        if (!ACCESS_TOKEN) {
+          setStatus('ACCESS_TOKEN пустой. Вставь токен в panel.html в const ACCESS_TOKEN.');
           return;
         }
 
@@ -83,7 +84,7 @@
             try {
               setStatus(`${prefix} Получаю item через /items/{id}...`);
 
-              // 1) /v2/boards/{boardId}/items/{itemId}
+              // 1) Получаем item: /v2/boards/{boardId}/items/{itemId}
               const metaResp = await fetch(
                 `https://api.miro.com/v2/boards/${boardId}/items/${img.id}`,
                 {
@@ -111,7 +112,7 @@
                 continue;
               }
 
-              // 2) одноразовый download URL: format=original, redirect=false
+              // 2) Получаем одноразовый download URL: format=original, redirect=false
               setStatus(`${prefix} Получаю download URL...`);
 
               const urlObj = new URL(imageUrl);
@@ -142,7 +143,7 @@
                 continue;
               }
 
-              // 3) скачиваем файл
+              // 3) Скачиваем файл
               setStatus(`${prefix} Скачиваю файл...`);
 
               const fileResp = await fetch(downloadUrl);
