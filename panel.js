@@ -1,4 +1,4 @@
-const ACCESS_TOKEN = 'TODO_PUT_TOKEN_HERE';
+const ACCESS_TOKEN = eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_ImGjc66YvP8x8XBTtbUkFWsBeWY;
 
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('downloadBtn');
@@ -138,3 +138,4 @@ function setStatus(text) {
     setStatus('Не получилось скачать ни одной картинки :(');
   }
 }
+
