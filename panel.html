@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Image Downloader – TEST</title>
+  <title>Image Downloader (test)</title>
+  <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     body {
       margin: 0;
@@ -23,9 +24,9 @@
   </style>
 </head>
 <body>
-  <h3>TEST PANEL</h3>
-  <p>Если всё работает, при загрузке появится статус,<br>а при клике по кнопке будет alert и смена текста.</p>
-  <button id="downloadBtn">TEST BUTTON</button>
+  <h3>Download selected images (TEST v1)</h3>
+  <p>1. Выдели на борде картинки<br>2. Нажми кнопку ниже</p>
+  <button id="downloadBtn">TEST: click me</button>
   <div id="status"></div>
 
   <script>
@@ -34,15 +35,15 @@
       const btn = document.getElementById('downloadBtn');
 
       function setStatus(text) {
-        console.log('[TEST PANEL]', text);
+        console.log('[ImageDownloader TEST]', text);
         statusEl.textContent = text;
       }
 
-      setStatus('Панель загрузилась. Нажми на кнопку.');
+      setStatus('Панель загружена. Нажми кнопку — должен быть alert.');
 
       btn.addEventListener('click', () => {
-        setStatus('Кнопка нажата!');
-        alert('Кнопка нажата (тестовый panel.html).');
+        setStatus('Кнопка нажата (см. alert)');
+        alert('КНОПКА НАЖАТА (это тест, без Miro API)');
       });
     });
   </script>
