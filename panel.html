@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -216,9 +216,9 @@
 
   <script>
     // 🔑 put your real access token here (only the token, without "Bearer ")
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_tGcE2kDwUOFPFD0ul_K5oLFkBjo';
+    const ACCESS_TOKEN = ' const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_tGcE2kDwUOFPFD0ul_K5oLFkBjo';
 
-    // try to extract original filename (without extension) from URL
+    // extract something похожее на имя файла из URL
     function extractBaseNameFromUrl(url) {
       try {
         const u = new URL(url);
@@ -226,6 +226,14 @@
         const file = (path.split('/').pop() || '').trim();
         if (!file) return '';
         const withoutExt = file.replace(/\.[^/.]+$/, ''); // strip extension
+        const lowered = withoutExt.toLowerCase();
+
+        // игнорируем мусорные названия вроде "original", "image" и т.п.
+        const badNames = ['original', 'image', 'img', 'file'];
+        if (!withoutExt || badNames.includes(lowered)) {
+          return '';
+        }
+
         return decodeURIComponent(withoutExt);
       } catch (e) {
         console.warn('Cannot parse filename from URL', url, e);
@@ -387,7 +395,6 @@
                 continue;
               }
 
-              // try to infer original filename from URL if title is empty
               const urlBaseName =
                 extractBaseNameFromUrl(downloadUrl) ||
                 extractBaseNameFromUrl(imageUrl);
@@ -421,7 +428,7 @@
 
               let finalName;
               if (useMiroNames) {
-                // 1) title, 2) filename from URL, 3) baseName + _num
+                // 1) title, 2) filename from URL (если не "original"/"image"), 3) baseName + _num
                 const baseFromMiro = miroName || `${baseName}_${num}`;
                 finalName = `${baseFromMiro}${suffix}`;
               } else {
