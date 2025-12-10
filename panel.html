@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -218,6 +218,43 @@
     // 🔑 put your real access token here (only the token, without "Bearer ")
     const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_tGcE2kDwUOFPFD0ul_K5oLFkBjo';
 
+    // try to extract original filename (without extension) from URL
+    function extractBaseNameFromUrl(url) {
+      try {
+        const u = new URL(url);
+        const path = u.pathname || '';
+        const file = (path.split('/').pop() || '').trim();
+        if (!file) return '';
+        const withoutExt = file.replace(/\.[^/.]+$/, ''); // strip extension
+        return decodeURIComponent(withoutExt);
+      } catch (e) {
+        console.warn('Cannot parse filename from URL', url, e);
+        return '';
+      }
+    }
+
+    // try to find name in metadata (for example, set by Image Align Tool)
+    function extractNameFromMetadata(metadata) {
+      if (!metadata || typeof metadata !== 'object') return '';
+      let result = '';
+      for (const key of Object.keys(metadata)) {
+        const ns = metadata[key];
+        if (!ns || typeof ns !== 'object') continue;
+        const candidate =
+          (ns.fileName ||
+            ns.filename ||
+            ns.imageName ||
+            ns.name ||
+            ns.title ||
+            '').trim();
+        if (candidate) {
+          result = candidate;
+          break;
+        }
+      }
+      return result;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const statusEl = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
@@ -372,6 +409,14 @@
                 continue;
               }
 
+              // name from metadata (например, выставленная Image Align Tool)
+              const nameFromMetadata = extractNameFromMetadata(metaJson.metadata || {});
+
+              // try to infer original filename from URL if needed
+              const urlBaseName =
+                extractBaseNameFromUrl(downloadUrl) ||
+                extractBaseNameFromUrl(imageUrl);
+
               setStatus(`${prefixLabel} Downloading file...`);
 
               const fileResp = await fetch(downloadUrl);
@@ -398,12 +443,25 @@
 
               let title = (metaJson.title && metaJson.title.trim()) || '';
 
+              // порядок приоритетов:
+              // 1) metadata (Image Align Tool и др)
+              // 2) title
+              // 3) имя из URL
+              let miroNameRaw = nameFromMetadata || title || urlBaseName || '';
+
+              // выкинем мусорные имена
+              const junkNames = ['original', 'image'];
+              let miroName =
+                junkNames.includes(miroNameRaw.toLowerCase()) ? '' : miroNameRaw;
+
               let finalName;
-              if (useMiroNames && title) {
-                // title + suffix (no numbering)
-                finalName = title + suffix;
+              if (useMiroNames) {
+                // Use Miro object name:
+                // metadata -> title -> URL -> baseName + _num
+                const baseFromMiro = miroName || `${baseName}_${num}`;
+                finalName = `${baseFromMiro}${suffix}`;
               } else {
-                // baseName + suffix + _num
+                // Custom: baseName + suffix + _num (suffix before number)
                 finalName = `${baseName}${suffix}_${num}`;
               }
 
