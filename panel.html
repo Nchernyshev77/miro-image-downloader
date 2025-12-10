@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+      <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,6 @@
   <style>
     :root {
       --border-color: #dde1e7;
-      --bg-soft: #f7f8fa;
       --accent: #4262ff;
     }
 
@@ -31,28 +30,8 @@
       box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .subtitle {
-      font-size: 11px;
-      color: #6b7280;
-      margin-bottom: 12px;
-    }
-
     .section {
-      border-radius: 10px;
-      background: var(--bg-soft);
-      padding: 10px 10px 8px;
+      padding: 8px 0 4px;
       margin-bottom: 10px;
     }
 
@@ -92,48 +71,69 @@
       box-shadow: 0 0 0 1px rgba(66, 98, 255, 0.12);
     }
 
-    .radio-row {
+    .choice-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .choice {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 11px;
       color: #4b5563;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .radio-row input {
-      margin: 0;
+    .choice input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      position: relative;
+      display: inline-block;
     }
 
-    .inline-input {
-      flex: 1;
+    .choice input:checked {
+      border-color: var(--accent);
+      background: #eef2ff;
     }
 
-    .muted {
-      font-size: 10px;
-      color: #9ca3af;
-      margin-top: 2px;
+    .choice input:checked::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 1px;
+      width: 7px;
+      height: 9px;
+      border-right: 2px solid var(--accent);
+      border-bottom: 2px solid var(--accent);
+      transform: rotate(40deg);
     }
 
     .actions {
       margin-top: 12px;
       display: flex;
-      justify-content: flex-start;
-      gap: 8px;
+      justify-content: center;
       align-items: center;
     }
 
     button {
-      padding: 7px 12px;
-      font-size: 12px;
+      padding: 9px 20px;
+      font-size: 13px;
       font-weight: 500;
       border-radius: 999px;
       border: none;
       cursor: pointer;
       background: var(--accent);
       color: #fff;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      min-width: 120px;
     }
 
     button:disabled {
@@ -142,10 +142,11 @@
     }
 
     #status {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 11px;
       color: #4b5563;
       white-space: pre-line;
+      text-align: left;
     }
 
     .status-ok {
@@ -159,71 +160,53 @@
 </head>
 <body>
   <div class="card">
-    <div class="card-header">
-      <div class="title">Download selected images</div>
-    </div>
-    <div class="subtitle">
-      1. Выдели на борде нужные картинки<br>
-      2. Настрой имена и нажми кнопку
-    </div>
-
     <div class="section">
-      <div class="section-title">Имя файлов</div>
+      <div class="section-title">File naming</div>
 
-      <div class="field-row">
-        <label>Источник имени</label>
-        <div class="radio-row">
-          <input type="radio" name="nameMode" id="nameModeMiro" value="miro" checked>
-          <label for="nameModeMiro">Брать имя из объекта Miro</label>
-        </div>
-        <div class="radio-row" style="margin-top:4px;">
-          <input type="radio" name="nameMode" id="nameModeCustom" value="custom">
-          <label for="nameModeCustom">Своё базовое имя</label>
-        </div>
+      <div class="choice-row">
+        <label class="choice">
+          <input type="radio" name="nameMode" id="nameModeMiro" value="miro" checked />
+          <span>Use Miro object name</span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="nameMode" id="nameModeCustom" value="custom" />
+          <span>Use custom name</span>
+        </label>
+      </div>
+
+      <div class="field-row" id="baseNameRow" style="display:none;">
+        <label for="baseName">Name</label>
+        <input type="text" id="baseName" placeholder="Image name" />
       </div>
 
       <div class="field-row">
-        <label for="baseName">Базовое имя (для режима «своё»)</label>
-        <input type="text" id="baseName" placeholder="например, logo" />
-        <div class="muted">
-          Если выбрано «своё базовое имя», файлы будут называться
-          <code>logo_001.png</code>, <code>logo_002.png</code> и т.д.
-        </div>
+        <label for="prefixInput">Prefix</label>
+        <input type="text" id="prefixInput" placeholder="Prefix image name" />
       </div>
 
       <div class="field-row">
-        <label for="prefixInput">Префикс в имени (как «путь»)</label>
-        <input type="text" id="prefixInput" placeholder="например, projectA/" />
-        <div class="muted">
-          Префикс добавится в начало имени файла. Браузер всё равно сохранит файлы
-          в стандартную папку загрузок (или спросит путь, если включено в настройках).
-        </div>
+        <label for="suffixInput">Suffix</label>
+        <input type="text" id="suffixInput" placeholder="Image name suffix" />
       </div>
     </div>
 
     <div class="section">
-      <div class="section-title">Нумерация</div>
+      <div class="section-title">Numbering</div>
       <div class="field-row">
-        <label for="startIndex">Начать с номера</label>
+        <label for="startIndex">Start index</label>
         <input type="text" id="startIndex" value="1" />
-        <div class="muted">
-          Номер добавляется в конец имени, с ведущими нулями: 001, 002, 003…
-        </div>
       </div>
     </div>
 
     <div class="actions">
-      <button id="downloadBtn">
-        ⬇️ Download
-      </button>
+      <button id="downloadBtn">Download</button>
     </div>
 
     <div id="status"></div>
   </div>
 
   <script>
-    // 🔑 ВСТАВЬ СВОЙ РЕАЛЬНЫЙ ACCESS TOKEN
-    // только сам токен, без "Bearer "
+    // 🔑 put your real access token here (only the token, without "Bearer ")
     const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_tGcE2kDwUOFPFD0ul_K5oLFkBjo';
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -231,9 +214,23 @@
       const btn = document.getElementById('downloadBtn');
       const nameModeMiro = document.getElementById('nameModeMiro');
       const nameModeCustom = document.getElementById('nameModeCustom');
+      const baseNameRow = document.getElementById('baseNameRow');
       const baseNameInput = document.getElementById('baseName');
       const prefixInput = document.getElementById('prefixInput');
+      const suffixInput = document.getElementById('suffixInput');
       const startIndexInput = document.getElementById('startIndex');
+
+      function updateNameModeVisibility() {
+        if (nameModeCustom.checked) {
+          baseNameRow.style.display = 'flex';
+        } else {
+          baseNameRow.style.display = 'none';
+        }
+      }
+
+      nameModeMiro.addEventListener('change', updateNameModeVisibility);
+      nameModeCustom.addEventListener('change', updateNameModeVisibility);
+      updateNameModeVisibility();
 
       function setStatus(text, type = 'normal') {
         console.log('[ImageDownloader]', text);
@@ -245,40 +242,40 @@
 
       async function downloadSelectedImages() {
         if (!ACCESS_TOKEN) {
-          setStatus('ACCESS_TOKEN пустой. Вставь токен в panel.html.', 'error');
+          setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
           return;
         }
 
         btn.disabled = true;
 
         try {
-          setStatus('Читаю информацию о борде...');
+          setStatus('Reading board info...');
           const boardInfo = await miro.board.getInfo();
           const boardId = boardInfo.id;
 
           const selection = await miro.board.getSelection();
-
           if (!selection.length) {
-            setStatus('Ничего не выделено на борде.', 'error');
+            setStatus('No items selected on the board.', 'error');
             return;
           }
 
           const images = selection.filter(item => item.type === 'image');
           if (!images.length) {
-            setStatus('Во выделении нет image-элементов.', 'error');
+            setStatus('Selection does not contain image items.', 'error');
             return;
           }
 
-          // настройки имени
           const useMiroNames = nameModeMiro.checked;
           const baseNameRaw = baseNameInput.value.trim();
           const prefixRaw = prefixInput.value.trim();
+          const suffixRaw = suffixInput.value.trim();
           const startIndex = parseInt(startIndexInput.value, 10) || 1;
 
-          const prefix = prefixRaw ? prefixRaw : '';
+          const prefix = prefixRaw || '';
+          const suffix = suffixRaw || '';
           const baseName = baseNameRaw || 'image';
 
-          setStatus(`Найдено изображений: ${images.length}. Запрашиваю данные через REST API...`);
+          setStatus(`Found ${images.length} images. Fetching data from REST API...`);
 
           const downloaded = [];
           const errors = [];
@@ -289,7 +286,7 @@
             const prefixLabel = `(${i + 1}/${images.length}) [${img.id}]`;
 
             try {
-              setStatus(`${prefixLabel} Получаю item через /items/{id}...`);
+              setStatus(`${prefixLabel} Fetching item via /items/{id}...`);
 
               const metaResp = await fetch(
                 `https://api.miro.com/v2/boards/${boardId}/items/${img.id}`,
@@ -304,18 +301,18 @@
               if (!metaResp.ok) {
                 const txt = await metaResp.text();
                 console.error('Item meta error', metaResp.status, txt);
-                errors.push(`${prefixLabel} Ошибка meta ${metaResp.status}`);
+                errors.push(`${prefixLabel} meta error ${metaResp.status}`);
                 continue;
               }
 
               const metaJson = await metaResp.json();
               const imageUrl = metaJson?.data?.imageUrl;
               if (!imageUrl) {
-                errors.push(`${prefixLabel} Нет imageUrl в data`);
+                errors.push(`${prefixLabel} no imageUrl in data`);
                 continue;
               }
 
-              setStatus(`${prefixLabel} Получаю download URL...`);
+              setStatus(`${prefixLabel} Fetching download URL...`);
 
               const urlObj = new URL(imageUrl);
               urlObj.searchParams.set('format', 'original');
@@ -331,24 +328,24 @@
               if (!resourceResp.ok) {
                 const txt = await resourceResp.text();
                 console.error('Resource error', resourceResp.status, txt);
-                errors.push(`${prefixLabel} Ошибка resource ${resourceResp.status}`);
+                errors.push(`${prefixLabel} resource error ${resourceResp.status}`);
                 continue;
               }
 
               const resourceJson = await resourceResp.json();
               const downloadUrl = resourceJson.url;
               if (!downloadUrl) {
-                errors.push(`${prefixLabel} В ответе resource нет url`);
+                errors.push(`${prefixLabel} no url in resource response`);
                 continue;
               }
 
-              setStatus(`${prefixLabel} Скачиваю файл...`);
+              setStatus(`${prefixLabel} Downloading file...`);
 
               const fileResp = await fetch(downloadUrl);
               if (!fileResp.ok) {
                 const txt = await fileResp.text();
                 console.error('Download error', fileResp.status, txt);
-                errors.push(`${prefixLabel} Ошибка download ${fileResp.status}`);
+                errors.push(`${prefixLabel} download error ${fileResp.status}`);
                 continue;
               }
 
@@ -366,16 +363,15 @@
               })();
 
               let title = (metaJson.title && metaJson.title.trim()) || '';
-              if (!title) title = baseName + '_' + num;
 
               let finalName;
               if (useMiroNames && title) {
                 finalName = title;
               } else {
-                finalName = baseName + '_' + num;
+                finalName = `${baseName}_${num}`;
               }
 
-              const fileName = prefix + finalName + '.' + extFromType;
+              const fileName = prefix + finalName + suffix + '.' + extFromType;
 
               const a = document.createElement('a');
               a.href = blobUrl;
@@ -388,32 +384,32 @@
               downloaded.push(fileName);
             } catch (e) {
               console.error('Unexpected error for image', img.id, e);
-              errors.push(`${prefixLabel} Неожиданная ошибка`);
+              errors.push(`${prefixLabel} unexpected error`);
             }
           }
 
           if (downloaded.length) {
-            let msg = `Готово. Скачано файлов: ${downloaded.length}.`;
+            let msg = `Done. Downloaded ${downloaded.length} files.`;
             if (errors.length) {
-              msg += '\nНо были ошибки:\n' + errors.join('\n');
+              msg += '\nSome errors:\n' + errors.join('\n');
             }
             setStatus(msg, errors.length ? 'error' : 'ok');
           } else {
-            let msg = 'Не получилось скачать ни одной картинки :(';
+            let msg = 'Failed to download any images.';
             if (errors.length) {
-              msg += '\nПодробности:\n' + errors.join('\n');
+              msg += '\nDetails:\n' + errors.join('\n');
             }
             setStatus(msg, 'error');
           }
         } catch (err) {
           console.error('Fatal error:', err);
-          setStatus('Неожиданная ошибка (см. консоль панели): ' + (err.message || err), 'error');
+          setStatus('Unexpected error (see panel console): ' + (err.message || err), 'error');
         } finally {
           btn.disabled = false;
         }
       }
 
-      setStatus('Готово к работе. Выдели картинки на борде и нажми кнопку.');
+      setStatus('Select images on the board and click Download.');
       console.log('[ImageDownloader] panel loaded');
 
       btn.addEventListener('click', () => {
