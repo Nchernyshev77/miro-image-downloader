@@ -23,7 +23,6 @@
     }
 
     .card {
-      /* рамки и тени убраны */
       border: none;
       box-shadow: none;
       padding: 0;
@@ -116,8 +115,36 @@
       cursor: default;
     }
 
-    #status {
+    .progress-container {
       margin-top: 12px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 0.2s ease-out;
+    }
+
+    .progress-label {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      color: #111827;
+    }
+
+    #status {
+      margin-top: 10px;
       font-size: 12px;
       color: #4b5563;
       white-space: pre-line;
@@ -177,6 +204,13 @@
       <button id="downloadBtn">Download</button>
     </div>
 
+    <div class="progress-container">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-label" id="progressLabel"></div>
+    </div>
+
     <div id="status"></div>
   </div>
 
@@ -195,6 +229,9 @@
       const suffixInput = document.getElementById('suffixInput');
       const startIndexInput = document.getElementById('startIndex');
 
+      const progressFill = document.getElementById('progressFill');
+      const progressLabel = document.getElementById('progressLabel');
+
       function updateNameModeVisibility() {
         if (nameModeCustom.checked) {
           baseNameRow.style.display = 'flex';
@@ -207,6 +244,19 @@
       nameModeCustom.addEventListener('change', updateNameModeVisibility);
       updateNameModeVisibility();
 
+      function resetProgress() {
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressLabel) progressLabel.textContent = '';
+      }
+
+      function setProgress(current, total) {
+        if (!progressFill || !progressLabel || !total) return;
+        const safeCurrent = Math.min(Math.max(current, 0), total);
+        const percent = Math.round((safeCurrent / total) * 100);
+        progressFill.style.width = percent + '%';
+        progressLabel.textContent = `${safeCurrent}/${total}`;
+      }
+
       function setStatus(text, type = 'normal') {
         console.log('[ImageDownloader]', text);
         statusEl.textContent = text;
@@ -218,10 +268,12 @@
       async function downloadSelectedImages() {
         if (!ACCESS_TOKEN) {
           setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
+          resetProgress();
           return;
         }
 
         btn.disabled = true;
+        resetProgress();
 
         try {
           setStatus('Reading board info...');
@@ -250,15 +302,17 @@
           const suffix = suffixRaw || '';
           const baseName = baseNameRaw || 'image';
 
-          setStatus(`Found ${images.length} images. Fetching data from REST API...`);
+          const total = images.length;
+          setStatus(`Found ${total} images. Fetching data from REST API...`);
+          setProgress(0, total);
 
           const downloaded = [];
           const errors = [];
 
-          for (let i = 0; i < images.length; i++) {
+          for (let i = 0; i < total; i++) {
             const img = images[i];
             const num = (startIndex + i).toString().padStart(3, '0');
-            const prefixLabel = `(${i + 1}/${images.length}) [${img.id}]`;
+            const prefixLabel = `(${i + 1}/${total}) [${img.id}]`;
 
             try {
               setStatus(`${prefixLabel} Fetching item via /items/{id}...`);
@@ -277,6 +331,7 @@
                 const txt = await metaResp.text();
                 console.error('Item meta error', metaResp.status, txt);
                 errors.push(`${prefixLabel} meta error ${metaResp.status}`);
+                setProgress(i + 1, total);
                 continue;
               }
 
@@ -284,6 +339,7 @@
               const imageUrl = metaJson?.data?.imageUrl;
               if (!imageUrl) {
                 errors.push(`${prefixLabel} no imageUrl in data`);
+                setProgress(i + 1, total);
                 continue;
               }
 
@@ -304,6 +360,7 @@
                 const txt = await resourceResp.text();
                 console.error('Resource error', resourceResp.status, txt);
                 errors.push(`${prefixLabel} resource error ${resourceResp.status}`);
+                setProgress(i + 1, total);
                 continue;
               }
 
@@ -311,6 +368,7 @@
               const downloadUrl = resourceJson.url;
               if (!downloadUrl) {
                 errors.push(`${prefixLabel} no url in resource response`);
+                setProgress(i + 1, total);
                 continue;
               }
 
@@ -321,6 +379,7 @@
                 const txt = await fileResp.text();
                 console.error('Download error', fileResp.status, txt);
                 errors.push(`${prefixLabel} download error ${fileResp.status}`);
+                setProgress(i + 1, total);
                 continue;
               }
 
@@ -341,12 +400,14 @@
 
               let finalName;
               if (useMiroNames && title) {
-                finalName = title;
+                // title + suffix (no numbering)
+                finalName = title + suffix;
               } else {
-                finalName = `${baseName}_${num}`;
+                // baseName + suffix + _num
+                finalName = `${baseName}${suffix}_${num}`;
               }
 
-              const fileName = prefix + finalName + suffix + '.' + extFromType;
+              const fileName = prefix + finalName + '.' + extFromType;
 
               const a = document.createElement('a');
               a.href = blobUrl;
@@ -360,6 +421,8 @@
             } catch (e) {
               console.error('Unexpected error for image', img.id, e);
               errors.push(`${prefixLabel} unexpected error`);
+            } finally {
+              setProgress(i + 1, total);
             }
           }
 
@@ -385,6 +448,7 @@
       }
 
       setStatus('Select images on the board and click Download.');
+      resetProgress();
       console.log('[ImageDownloader] panel loaded');
 
       btn.addEventListener('click', () => {
