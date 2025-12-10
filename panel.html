@@ -218,6 +218,21 @@
     // 🔑 put your real access token here (only the token, without "Bearer ")
     const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_tGcE2kDwUOFPFD0ul_K5oLFkBjo';
 
+    // try to extract original filename (without extension) from URL
+    function extractBaseNameFromUrl(url) {
+      try {
+        const u = new URL(url);
+        const path = u.pathname || '';
+        const file = (path.split('/').pop() || '').trim();
+        if (!file) return '';
+        const withoutExt = file.replace(/\.[^/.]+$/, ''); // strip extension
+        return decodeURIComponent(withoutExt);
+      } catch (e) {
+        console.warn('Cannot parse filename from URL', url, e);
+        return '';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const statusEl = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
@@ -372,6 +387,11 @@
                 continue;
               }
 
+              // try to infer original filename from URL if title is empty
+              const urlBaseName =
+                extractBaseNameFromUrl(downloadUrl) ||
+                extractBaseNameFromUrl(imageUrl);
+
               setStatus(`${prefixLabel} Downloading file...`);
 
               const fileResp = await fetch(downloadUrl);
@@ -397,13 +417,15 @@
               })();
 
               let title = (metaJson.title && metaJson.title.trim()) || '';
+              let miroName = title || urlBaseName || '';
 
               let finalName;
-              if (useMiroNames && title) {
-                // title + suffix (no numbering)
-                finalName = title + suffix;
+              if (useMiroNames) {
+                // 1) title, 2) filename from URL, 3) baseName + _num
+                const baseFromMiro = miroName || `${baseName}_${num}`;
+                finalName = `${baseFromMiro}${suffix}`;
               } else {
-                // baseName + suffix + _num
+                // custom: baseName + suffix + _num (suffix before number)
                 finalName = `${baseName}${suffix}_${num}`;
               }
 
