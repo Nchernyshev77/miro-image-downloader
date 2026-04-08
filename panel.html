@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -182,8 +182,10 @@
       });
     }
 
-    function rectsOverlapHorizontally(a, b, pad = 0) {
-      return a.left <= b.right + pad && a.right >= b.left - pad;
+    function rectOverlapArea(a, b) {
+      const overlapX = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+      const overlapY = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      return overlapX * overlapY;
     }
 
     function sortImagesForNumbering(images) {
@@ -306,14 +308,14 @@
       const text = sanitizePart(getItemText(sticky), '');
 
       if (!text || text === 'sd') return false;
-      if (!rectContainsCenter(fr, sticky, 20)) return false;
+      if (!rectContainsCenter(fr, sticky, 25)) return false;
 
-      const maxCenterX = fr.left + Math.max(180, fr.width * 0.36);
-      const maxRightX = fr.left + Math.max(260, fr.width * 0.44);
+      const maxLeftX = fr.left + Math.max(220, fr.width * 0.42);
+      const maxRightX = fr.left + Math.max(340, fr.width * 0.62);
 
-      if (sr.cx > maxCenterX) return false;
+      if (sr.left > maxLeftX) return false;
       if (sr.right > maxRightX) return false;
-      if (sr.cy < fr.top - 20 || sr.cy > fr.bottom + 20) return false;
+      if (sr.top < fr.top - 30 || sr.bottom > fr.bottom + 30) return false;
 
       return true;
     }
@@ -327,8 +329,8 @@
         .sort((a, b) => {
           const ra = getRect(a);
           const rb = getRect(b);
-          if (Math.abs(ra.cy - rb.cy) > 8) return ra.cy - rb.cy;
-          return ra.cx - rb.cx;
+          if (Math.abs(ra.top - rb.top) > 8) return ra.top - rb.top;
+          return ra.left - rb.left;
         });
     }
 
@@ -367,22 +369,29 @@
       });
     }
 
-    function buildTypeBandsForFrame(frame, typeStickies) {
+    function buildTypeZonesForFrame(frame, typeStickies) {
       const fr = getRect(frame);
 
       return typeStickies.map((sticky, index) => {
         const sr = getRect(sticky);
-        const prev = typeStickies[index - 1] ? getRect(typeStickies[index - 1]) : null;
         const next = typeStickies[index + 1] ? getRect(typeStickies[index + 1]) : null;
 
-        const top = prev ? (prev.cy + sr.cy) / 2 : fr.top - 40;
-        const bottom = next ? (sr.cy + next.cy) / 2 : fr.bottom + 40;
+        const topPad = Math.max(12, sr.height * 0.15);
+        const nextPad = next ? Math.max(12, next.height * 0.15) : 0;
+
+        const top = Math.max(fr.top, sr.top - topPad);
+        let bottom = next ? next.top - nextPad : fr.bottom;
+        bottom = Math.min(fr.bottom, bottom);
+
+        if (bottom < top + 12) {
+          bottom = next ? Math.min(fr.bottom, (sr.bottom + next.top) / 2) : fr.bottom;
+        }
 
         return {
           sticky,
           stickyRect: sr,
-          band: {
-            left: sr.right - 8,
+          zone: {
+            left: Math.max(fr.left, sr.left),
             right: fr.right + Math.max(80, fr.width * 0.02),
             top,
             bottom
@@ -391,21 +400,28 @@
       });
     }
 
-    function assignImageToTypeByBand(image, bands) {
+    function assignImageToTypeByZone(image, zones) {
       const ir = getRect(image);
 
-      const strictBand = bands.find(band => {
-        return (
-          ir.cy >= band.band.top &&
-          ir.cy < band.band.bottom &&
-          ir.cx >= band.stickyRect.right - 8 &&
-          ir.cx <= band.band.right
-        );
-      });
-      if (strictBand) return strictBand;
+      const candidates = zones
+        .map(zone => {
+          const overlapArea = rectOverlapArea(ir, zone.zone);
+          const centerInside = pointInRect(ir.cx, ir.cy, zone.zone);
+          const imageTouchesZone = ir.right >= zone.zone.left;
+          if (!imageTouchesZone) return null;
+          if (!overlapArea && !centerInside) return null;
 
-      const verticalBand = bands.find(band => ir.cy >= band.band.top && ir.cy < band.band.bottom);
-      return verticalBand || null;
+          const score =
+            overlapArea +
+            (centerInside ? Math.max(1, ir.width * ir.height * 0.15) : 0) +
+            Math.max(0, ir.right - zone.zone.left);
+
+          return { zone, score };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score);
+
+      return candidates.length ? candidates[0].zone : null;
     }
 
     function imageHasSd(image, sdStickies) {
@@ -489,16 +505,16 @@
         };
       }
 
-      const bands = buildTypeBandsForFrame(targetFrame, typeStickies);
-      const assignedBand = assignImageToTypeByBand(image, bands);
-      const innerName = sanitizePart(assignedBand ? getItemText(assignedBand.sticky) : '', 'item');
+      const zones = buildTypeZonesForFrame(targetFrame, typeStickies);
+      const assignedZone = assignImageToTypeByZone(image, zones);
+      const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
       const hasSd = imageHasSd(image, sdStickies);
 
       const imagesForFrame = getImagesForFrame(targetFrame, images);
-      const imagesForGroup = assignedBand
+      const imagesForGroup = assignedZone
         ? imagesForFrame.filter(img => {
-            const band = assignImageToTypeByBand(img, bands);
-            return band && band.sticky.id === assignedBand.sticky.id;
+            const zone = assignImageToTypeByZone(img, zones);
+            return zone && zone.sticky.id === assignedZone.sticky.id;
           })
         : imagesForFrame;
 
