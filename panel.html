@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=LMSkinX1pIdrO69ejU3bjawKD7Z189ygLdpEy8_VUW3QLrMZSmWT7JET_rHNSfvnDA549p8DIXhce5Q-z2pxBIDZvksH6_U5H6MzPNWk7R3Gk1y2RUbKC-15DORO_JGEl6j65z547TeruukF0_E61k1Q_0aCANYvTBxcqfPqxo7o46D8bA15tRSOR33zFB7K5UzwtjufupcnZmvniHxMEelDNslzIwe0hu2Ky8v1buUE9GHbhwhFg8E5bf34ZV50qgjCZCZzvAp5oYa-mzCBSg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMGRlODA3MWY2YWIzZWRjMjNjZWM4NmQxNCZ0cz00OTMyMzgmcD1mcyZjaWQ9MSZzaWc9NjY1YWEzZGQ2ZTE1MjIwMWYxZjg3MjNjNjZkYzg4YWNmYzFhNGNhYzhmYjE4MTNlNjRlMjYwOTRmNDZjOWY4MCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=jqlBcIILw71oJUX4I8uydJKJsly9NHl9AEZuX3E0WZXOrn8YRdn_DngTzFpgNwMjnv841Wf0Jr0HG5cIC79MxgciHkfNI70Rhucdve13o9jDqf-ov7v-oormrLEiUWqMEeowi_XZzzd1s2qxSjtxz3vyDM3bO1DmUqGkZzJIaqdA5pLMu-Td92V-voCsWHHcN7-sCkp-3mbXMvgahgG7urtV9FYSlF9hsWL9CVXDI-5pUAJu-SRf56Z53QaOa8wzkdR_HSdiGFCBMjTOqrcuLg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMGU4ZjA3MWY2YmQ3N2I0MjQ4MTQ1OTk5ZSZ0cz00OTMyMzkmcD1mcyZjaWQ9MSZzaWc9OGMxNjg3MmM2ZjJlYzQzMTFmNWQ3NjcxYjNhNWZiYTRlZmIxOTk5ZWY0NDdjYjhkMmNhZjgwZmEzNTQzN2FmMSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -163,7 +163,8 @@
         right: x + width / 2,
         top: y - height / 2,
         bottom: y + height / 2,
-        cx: x, cy: y
+        cx: x, cy: y,
+        area: width * height
       };
     }
 
@@ -181,12 +182,6 @@
       });
     }
 
-    function verticalOverlap(a, b) {
-      const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
-      const minH = Math.max(1, Math.min(a.height, b.height));
-      return overlap / minH;
-    }
-
     function sortImagesForNumbering(images) {
       return [...images].sort((a, b) => {
         const ra = getRect(a);
@@ -197,77 +192,88 @@
       });
     }
 
-    function isSelectedTextLike(item) {
+    function isSticky(item) {
       return item.type === 'sticky_note';
     }
 
-    function findMainColumnSticky(labels, frames) {
-      const outside = labels.filter(label => !frames.some(frame => rectContainsCenter(getRect(frame), label, 10)));
+    function findMainColumnSticky(stickies, frames) {
+      const outside = stickies.filter(sticky => !frames.some(frame => rectContainsCenter(getRect(frame), sticky, 10)));
       if (!outside.length) return null;
       return [...outside].sort((a, b) => {
         const ra = getRect(a);
         const rb = getRect(b);
-        if (Math.abs(ra.top - rb.top) > 1) return ra.top - rb.top;
-        return (rb.width * rb.height) - (ra.width * ra.height);
+        if (Math.abs(ra.top - rb.top) > 20) return ra.top - rb.top;
+        return rb.area - ra.area;
       })[0];
     }
 
-    function findFrameLabelSticky(frame, labels) {
+    function findFrameLabelSticky(frame, stickies, mainStickyId) {
       const fr = getRect(frame);
-      const maxGap = Math.max(260, fr.width * 0.55);
-      const candidates = labels
-        .map(label => {
-          const lr = getRect(label);
-          const txt = sanitizePart(getItemText(label), '');
-          if (!txt || txt === 'sd') return null;
-          const gap = fr.left - lr.right;
+      const maxGap = Math.max(320, fr.width * 0.7);
+      const candidates = stickies
+        .filter(sticky => sticky.id !== mainStickyId)
+        .map(sticky => {
+          const sr = getRect(sticky);
+          const text = sanitizePart(getItemText(sticky), '');
+          if (!text || text === 'sd') return null;
+
+          const gap = fr.left - sr.right;
           if (gap < -20 || gap > maxGap) return null;
-          const vOverlap = verticalOverlap(fr, lr);
-          const verticalPenalty = Math.abs(fr.cy - lr.cy);
-          const score = gap * 2 + verticalPenalty - vOverlap * 120;
-          return { label, score };
+          if (sr.cy < fr.top - sr.height * 0.6 || sr.cy > fr.bottom + sr.height * 0.6) return null;
+
+          const score = gap * 3 - sr.area * 0.01 + Math.abs(fr.cy - sr.cy);
+          return { sticky, score };
         })
         .filter(Boolean)
         .sort((a, b) => a.score - b.score);
-      return candidates.length ? candidates[0].label : null;
+
+      return candidates.length ? candidates[0].sticky : null;
     }
 
-    function findInnerStickies(frame, labels) {
+    function findInnerTypeStickies(frame, stickies) {
       const fr = getRect(frame);
       const leftBand = fr.left + fr.width * 0.38;
-      const pad = Math.max(14, fr.height * 0.02);
-      return labels.filter(label => {
-        const lr = getRect(label);
-        const txt = sanitizePart(getItemText(label), '');
-        if (!txt) return false;
-        if (lr.cx < fr.left - pad || lr.cx > leftBand) return false;
-        if (lr.cy < fr.top - pad || lr.cy > fr.bottom + pad) return false;
-        if (lr.width > fr.width * 0.45) return false;
-        if (lr.height > fr.height * 0.30) return false;
+      const candidates = stickies.filter(sticky => {
+        const sr = getRect(sticky);
+        const text = sanitizePart(getItemText(sticky), '');
+        if (!text || text === 'sd') return false;
+        if (sr.cx < fr.left || sr.cx > leftBand) return false;
+        if (sr.cy < fr.top || sr.cy > fr.bottom) return false;
+        if (sr.area < 1200) return false;
+        if (sr.width > fr.width * 0.45) return false;
+        if (sr.height > fr.height * 0.25) return false;
         return true;
+      });
+
+      return candidates.sort((a, b) => getRect(a).top - getRect(b).top);
+    }
+
+    function findSdStickiesForFrame(frame, stickies) {
+      const fr = getRect(frame);
+      return stickies.filter(sticky => {
+        const sr = getRect(sticky);
+        const text = sanitizePart(getItemText(sticky), '');
+        return text === 'sd' && rectContainsCenter(fr, sticky, 10);
       });
     }
 
-    function isSdSticky(label) {
-      return sanitizePart(getItemText(label), '') === 'sd';
-    }
-
-    function buildTypeZones(frame, typeStickies) {
+    function buildZonesForFrame(frame, typeStickies) {
       const fr = getRect(frame);
-      const sorted = [...typeStickies].sort((a, b) => getRect(a).top - getRect(b).top);
-      return sorted.map((sticky, index) => {
+      return typeStickies.map((sticky, index) => {
         const sr = getRect(sticky);
-        const nextRect = sorted[index + 1] ? getRect(sorted[index + 1]) : null;
-        const top = Math.max(fr.top, sr.top - sr.height * 0.06);
-        let bottom = nextRect
-          ? nextRect.top - Math.max(nextRect.height * 0.12, 10)
+        const next = typeStickies[index + 1] ? getRect(typeStickies[index + 1]) : null;
+        const top = Math.max(fr.top, sr.top - sr.height * 0.05);
+        let bottom = next
+          ? next.top - Math.max(next.height * 0.12, 8)
           : fr.bottom;
-        if (bottom < top + 10) bottom = nextRect ? (sr.bottom + nextRect.top) / 2 : fr.bottom;
+        if (bottom < top + 8) {
+          bottom = next ? (sr.bottom + next.top) / 2 : fr.bottom;
+        }
         return {
           sticky,
           stickyRect: sr,
           zone: {
-            left: Math.max(fr.left, sr.right - 4),
+            left: Math.max(fr.left, sr.right - 2),
             right: fr.right,
             top,
             bottom: Math.min(bottom, fr.bottom)
@@ -276,45 +282,32 @@
       });
     }
 
-    function assignImageToZoneByNearestLeftLabel(image, zones) {
+    function assignImageToTypeByNearestLeftSticky(image, zones) {
       const ir = getRect(image);
       const candidates = zones
         .map(z => {
           const sr = z.stickyRect;
-          const isRightOfLabel = ir.cx >= sr.right - 8;
-          const inFrameBandY = ir.cy >= z.zone.top && ir.cy <= z.zone.bottom;
-          if (!isRightOfLabel || !inFrameBandY) return null;
-          const horizontalDistance = Math.max(0, ir.left - sr.right);
+          if (ir.cx < sr.right - 5) return null;
+          const gapX = Math.max(0, ir.left - sr.right);
           const verticalDistance = Math.abs(ir.cy - sr.cy);
-          const score = verticalDistance * 2 + horizontalDistance * 0.15;
+          const inVerticalWindow = ir.cy >= z.zone.top && ir.cy <= z.zone.bottom;
+          const verticalPenalty = inVerticalWindow ? 0 : Math.min(400, Math.abs(ir.cy - Math.max(z.zone.top, Math.min(ir.cy, z.zone.bottom))) * 4);
+          const score = gapX * 0.2 + verticalDistance * 2 + verticalPenalty;
           return { zone: z, score };
         })
         .filter(Boolean)
         .sort((a, b) => a.score - b.score);
-      if (candidates.length) return candidates[0].zone;
 
-      const fallback = zones
-        .map(z => {
-          const sr = z.stickyRect;
-          if (ir.cx < sr.right - 8) return null;
-          const verticalDistance = Math.abs(ir.cy - sr.cy);
-          const penalty = ir.cy > z.zone.bottom ? (ir.cy - z.zone.bottom) * 3 : 0;
-          return { zone: z, score: verticalDistance * 2 + penalty };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.score - b.score);
-
-      return fallback.length ? fallback[0].zone : null;
+      return candidates.length ? candidates[0].zone : null;
     }
 
     function imageHasSd(image, sdStickies) {
       const ir = getRect(image);
-      const expand = Math.max(12, Math.min(ir.width, ir.height) * 0.18);
       const expanded = {
-        left: ir.left - expand,
-        right: ir.right + expand,
-        top: ir.top - expand,
-        bottom: ir.bottom + expand
+        left: ir.left - 12,
+        right: ir.right + 12,
+        top: ir.top - 12,
+        bottom: ir.bottom + 12
       };
       return sdStickies.some(sd => {
         const sr = getRect(sd);
@@ -353,10 +346,10 @@
 
     function buildStructuredNameData(selection, image, startIndex, indexWithinSelection) {
       const frames = selection.filter(item => item.type === 'frame');
-      const labels = selection.filter(isSelectedTextLike);
+      const stickies = selection.filter(isSticky);
       const images = selection.filter(item => item.type === 'image');
 
-      const mainSticky = findMainColumnSticky(labels, frames);
+      const mainSticky = findMainColumnSticky(stickies, frames);
       const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
 
       const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 4));
@@ -369,16 +362,13 @@
       }
 
       const fr = getRect(targetFrame);
-      const outsideLabels = labels.filter(label => !rectContainsCenter(fr, label, 8));
-      const frameLabel = findFrameLabelSticky(targetFrame, outsideLabels);
+      const outsideStickies = stickies.filter(sticky => !rectContainsCenter(fr, sticky, 8));
+      const frameLabel = findFrameLabelSticky(targetFrame, outsideStickies, mainSticky ? mainSticky.id : null);
       const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
 
-      const innerLabels = findInnerStickies(targetFrame, labels);
-      const sdStickies = innerLabels.filter(isSdSticky);
-      const typeStickies = innerLabels.filter(label => {
-        const txt = sanitizePart(getItemText(label), '');
-        return txt && txt !== 'sd';
-      });
+      const insideStickies = stickies.filter(sticky => rectContainsCenter(fr, sticky, 8));
+      const sdStickies = findSdStickiesForFrame(targetFrame, insideStickies);
+      const typeStickies = findInnerTypeStickies(targetFrame, insideStickies);
 
       if (!typeStickies.length) {
         return {
@@ -388,14 +378,14 @@
         };
       }
 
-      const zones = buildTypeZones(targetFrame, typeStickies);
-      const assignedZone = assignImageToZoneByNearestLeftLabel(image, zones);
+      const zones = buildZonesForFrame(targetFrame, typeStickies);
+      const assignedZone = assignImageToTypeByNearestLeftSticky(image, zones);
       const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
       const hasSd = imageHasSd(image, sdStickies);
 
       const imagesInsideFrame = images.filter(img => rectContainsCenter(fr, img, 2));
       const imagesForGroup = imagesInsideFrame.filter(img => {
-        const z = assignImageToZoneByNearestLeftLabel(img, zones);
+        const z = assignImageToTypeByNearestLeftSticky(img, zones);
         return z && assignedZone && z.sticky.id === assignedZone.sticky.id;
       });
 
@@ -454,7 +444,7 @@
       }
 
       async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN) {
+        if (!ACCESS_TOKEN || ACCESS_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
           setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
           resetProgress();
           return;
@@ -596,6 +586,7 @@
 
       setStatus('Select images on the board and click Download.');
       resetProgress();
+      console.log('[ImageDownloader] panel loaded');
       btn.addEventListener('click', () => {
         console.log('[ImageDownloader] button clicked');
         downloadSelectedImages();
