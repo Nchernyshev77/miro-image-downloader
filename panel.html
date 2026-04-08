@@ -219,6 +219,8 @@
   <script>
     const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_7gzbPBJBvHOGK3IsXTrdDA9FKGc';
 
+    const LABEL_TYPES = new Set(['sticky_note', 'sticker', 'shape', 'text']);
+
     function htmlToText(value) {
       if (!value) return '';
       const div = document.createElement('div');
@@ -235,6 +237,11 @@
         .replace(/\s+/g, '_')
         .replace(/_+/g, '_')
         .replace(/^_+|_+$/g, '');
+    }
+
+    function sanitizePart(text, fallback = 'item') {
+      const n = normalizeName(text);
+      return n || fallback;
     }
 
     function extractBaseNameFromUrl(url) {
@@ -313,9 +320,18 @@
       return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
     }
 
-    function rectContainsCenterOfItem(rect, item) {
+    function rectContainsCenterOfItem(rect, item, pad = 0) {
       const r = getRect(item);
-      return pointInRect(r.cx, r.cy, rect);
+      return pointInRect(
+        r.cx,
+        r.cy,
+        {
+          left: rect.left - pad,
+          right: rect.right + pad,
+          top: rect.top - pad,
+          bottom: rect.bottom + pad
+        }
+      );
     }
 
     function verticalOverlap(a, b) {
@@ -324,9 +340,12 @@
       return overlap / minH;
     }
 
-    function sanitizePart(text, fallback = 'item') {
-      const n = normalizeName(text);
-      return n || fallback;
+    function horizontalGapLeft(frameRect, labelRect) {
+      return frameRect.left - labelRect.right;
+    }
+
+    function horizontalGapRight(frameRect, labelRect) {
+      return labelRect.left - frameRect.right;
     }
 
     function sortImagesForNumbering(images) {
@@ -334,17 +353,22 @@
         const ra = getRect(a);
         const rb = getRect(b);
 
-        if (Math.abs(ra.top - rb.top) > Math.min(ra.height, rb.height) * 0.35) {
+        const rowThreshold = Math.max(10, Math.min(ra.height, rb.height) * 0.35);
+        if (Math.abs(ra.top - rb.top) > rowThreshold) {
           return ra.top - rb.top;
         }
         return ra.left - rb.left;
       });
     }
 
-    function findMainColumnSticky(stickies, frames) {
-      const outside = stickies.filter(sticky => {
-        const rect = getRect(sticky);
-        return !frames.some(frame => pointInRect(rect.cx, rect.cy, getRect(frame)));
+    function isLabelItem(item) {
+      return LABEL_TYPES.has(item.type);
+    }
+
+    function findMainColumnSticky(labels, frames) {
+      const outside = labels.filter(label => {
+        const rect = getRect(label);
+        return !frames.some(frame => rectContainsCenterOfItem(getRect(frame), label, 10));
       });
 
       if (!outside.length) return null;
@@ -361,63 +385,73 @@
       })[0];
     }
 
-    function findFrameLabelSticky(frame, stickies) {
+    function findFrameLabelSticky(frame, labels) {
       const fr = getRect(frame);
+      const maxHorizontalDistance = Math.max(220, fr.width * 0.45);
+      const verticalTolerance = Math.max(50, fr.height * 0.15);
 
-      const candidatesLeft = stickies
-        .filter(sticky => {
-          const sr = getRect(sticky);
-          const overlap = verticalOverlap(fr, sr);
-          const isLeft = sr.right <= fr.left + 30;
-          return overlap > 0.2 && isLeft;
+      const candidates = labels
+        .map(label => {
+          const lr = getRect(label);
+          const text = sanitizePart(getItemText(label), '');
+          if (!text || text === 'sd') return null;
+
+          const overlap = verticalOverlap(fr, lr);
+          const centerDistanceY = Math.abs(fr.cy - lr.cy);
+
+          const leftGap = horizontalGapLeft(fr, lr);
+          const rightGap = horizontalGapRight(fr, lr);
+
+          const isLeftCandidate =
+            leftGap >= -20 &&
+            leftGap <= maxHorizontalDistance &&
+            lr.cx <= fr.left + fr.width * 0.15;
+
+          const isRightCandidate =
+            rightGap >= -20 &&
+            rightGap <= maxHorizontalDistance &&
+            lr.cx >= fr.right - fr.width * 0.15;
+
+          const verticallyRelevant =
+            overlap > 0.05 ||
+            (lr.cy >= fr.top - verticalTolerance && lr.cy <= fr.bottom + verticalTolerance);
+
+          if (!verticallyRelevant) return null;
+          if (!isLeftCandidate && !isRightCandidate) return null;
+
+          const preferLeft = isLeftCandidate ? 0 : 1000;
+          const gap = isLeftCandidate ? Math.abs(leftGap) : Math.abs(rightGap);
+          const score = preferLeft + gap * 2 + centerDistanceY + Math.abs(lr.height - 80) * 0.1;
+
+          return { label, score };
         })
-        .sort((a, b) => {
-          const ra = getRect(a);
-          const rb = getRect(b);
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score);
 
-          const gapA = Math.abs(fr.left - ra.right);
-          const gapB = Math.abs(fr.left - rb.right);
-          const centerA = Math.abs(fr.cy - ra.cy);
-          const centerB = Math.abs(fr.cy - rb.cy);
-
-          return (gapA * 2 + centerA) - (gapB * 2 + centerB);
-        });
-
-      if (candidatesLeft.length) return candidatesLeft[0];
-
-      const candidatesRight = stickies
-        .filter(sticky => {
-          const sr = getRect(sticky);
-          const overlap = verticalOverlap(fr, sr);
-          const isRight = sr.left >= fr.right - 30;
-          return overlap > 0.2 && isRight;
-        })
-        .sort((a, b) => {
-          const ra = getRect(a);
-          const rb = getRect(b);
-
-          const gapA = Math.abs(ra.left - fr.right);
-          const gapB = Math.abs(rb.left - fr.right);
-          const centerA = Math.abs(fr.cy - ra.cy);
-          const centerB = Math.abs(fr.cy - rb.cy);
-
-          return (gapA * 2 + centerA) - (gapB * 2 + centerB);
-        });
-
-      return candidatesRight[0] || null;
+      return candidates.length ? candidates[0].label : null;
     }
 
-    function findInnerStickies(frame, stickies) {
+    function findInnerStickies(frame, labels) {
       const fr = getRect(frame);
+      const pad = Math.max(16, Math.min(fr.width, fr.height) * 0.02);
 
-      return stickies.filter(sticky => {
-        const sr = getRect(sticky);
-        return pointInRect(sr.cx, sr.cy, fr);
+      return labels.filter(label => {
+        const lr = getRect(label);
+        const text = sanitizePart(getItemText(label), '');
+        if (!text) return false;
+
+        const insideExpanded = rectContainsCenterOfItem(fr, label, pad);
+        if (!insideExpanded) return false;
+
+        const reasonableWidth = lr.width <= fr.width * 0.45;
+        const reasonableHeight = lr.height <= fr.height * 0.35;
+
+        return reasonableWidth && reasonableHeight;
       });
     }
 
-    function isSdSticky(sticky) {
-      const text = sanitizePart(getItemText(sticky), '');
+    function isSdSticky(label) {
+      const text = sanitizePart(getItemText(label), '');
       return text === 'sd';
     }
 
@@ -430,16 +464,22 @@
         const next = sorted[index + 1];
         const nextRect = next ? getRect(next) : null;
 
-        const zoneTop = Math.max(fr.top, sr.top - sr.height * 0.10);
-        const zoneBottom = nextRect
-          ? Math.min(fr.bottom, nextRect.top - nextRect.height * 0.12)
+        let zoneTop = Math.max(fr.top, sr.top - sr.height * 0.08);
+        let zoneBottom = nextRect
+          ? Math.min(fr.bottom, nextRect.top - Math.max(nextRect.height * 0.15, 10))
           : fr.bottom;
+
+        if (zoneBottom < zoneTop + 10) {
+          zoneBottom = nextRect
+            ? (sr.bottom + nextRect.top) / 2
+            : fr.bottom;
+        }
 
         return {
           sticky,
           stickyRect: sr,
           zone: {
-            left: Math.max(fr.left, sr.right),
+            left: Math.max(fr.left, sr.right - 5),
             right: fr.right,
             top: zoneTop,
             bottom: zoneBottom
@@ -458,10 +498,12 @@
       }
 
       const possible = zones
-        .filter(z => ir.cx >= z.stickyRect.right)
+        .filter(z => ir.cx >= z.stickyRect.right - 20)
         .map(z => ({
           zone: z,
-          distance: Math.abs(ir.cy - z.stickyRect.cy)
+          distance:
+            Math.abs(ir.cy - z.stickyRect.cy) * 2 +
+            Math.max(0, z.stickyRect.right - ir.cx) * 3
         }))
         .sort((a, b) => a.distance - b.distance);
 
@@ -470,7 +512,7 @@
 
     function imageHasSd(image, sdStickies) {
       const ir = getRect(image);
-      const expand = Math.max(12, Math.min(ir.width, ir.height) * 0.15);
+      const expand = Math.max(12, Math.min(ir.width, ir.height) * 0.18);
 
       const expanded = {
         left: ir.left - expand,
@@ -483,6 +525,127 @@
         const sr = getRect(sd);
         return pointInRect(sr.cx, sr.cy, expanded);
       });
+    }
+
+    async function getDownloadMeta(boardId, imageId) {
+      const metaResp = await fetch(
+        `https://api.miro.com/v2/boards/${boardId}/items/${imageId}`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
+          },
+        },
+      );
+
+      if (!metaResp.ok) {
+        const txt = await metaResp.text();
+        throw new Error(`meta error ${metaResp.status}: ${txt}`);
+      }
+
+      const metaJson = await metaResp.json();
+      const imageUrl = metaJson?.data?.imageUrl;
+      if (!imageUrl) {
+        throw new Error('no imageUrl in data');
+      }
+
+      const urlObj = new URL(imageUrl);
+      urlObj.searchParams.set('format', 'original');
+      urlObj.searchParams.set('redirect', 'false');
+
+      const resourceResp = await fetch(urlObj.toString(), {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
+        },
+      });
+
+      if (!resourceResp.ok) {
+        const txt = await resourceResp.text();
+        throw new Error(`resource error ${resourceResp.status}: ${txt}`);
+      }
+
+      const resourceJson = await resourceResp.json();
+      const downloadUrl = resourceJson.url;
+      if (!downloadUrl) {
+        throw new Error('no url in resource response');
+      }
+
+      return { metaJson, imageUrl, downloadUrl };
+    }
+
+    function buildStructuredNameData(selection, image, startIndex, indexWithinGroup) {
+      const frames = selection.filter(item => item.type === 'frame');
+      const labels = selection.filter(isLabelItem);
+      const images = selection.filter(item => item.type === 'image');
+
+      const mainSticky = findMainColumnSticky(labels, frames);
+      const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
+
+      const targetFrame = frames.find(frame => rectContainsCenterOfItem(getRect(frame), image, 4));
+      if (!targetFrame) {
+        return {
+          base: `${mainName}_frame_item`,
+          number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
+          hasSd: false
+        };
+      }
+
+      const frameRect = getRect(targetFrame);
+
+      const outsideLabels = labels.filter(label =>
+        !rectContainsCenterOfItem(frameRect, label, 8)
+      );
+
+      const frameLabelSticky = findFrameLabelSticky(targetFrame, outsideLabels);
+      const frameName = sanitizePart(frameLabelSticky ? getItemText(frameLabelSticky) : '', 'frame');
+
+      const innerLabels = findInnerStickies(targetFrame, labels);
+      const sdStickies = innerLabels.filter(isSdSticky);
+
+      const typeStickies = innerLabels.filter(label => {
+        const txt = sanitizePart(getItemText(label), '');
+        return txt && txt !== 'sd';
+      });
+
+      if (!typeStickies.length) {
+        return {
+          base: `${mainName}_${frameName}_image`,
+          number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
+          hasSd: imageHasSd(image, sdStickies)
+        };
+      }
+
+      const zones = buildTypeZones(targetFrame, typeStickies);
+      const zone = assignImageToZone(image, zones);
+
+      const innerName = sanitizePart(
+        zone ? getItemText(zone.sticky) : '',
+        'image'
+      );
+
+      const hasSd = imageHasSd(image, sdStickies);
+
+      let imagesForThisZone = images.filter(img => rectContainsCenterOfItem(frameRect, img, 2));
+      if (zone) {
+        imagesForThisZone = imagesForThisZone.filter(img => {
+          const assigned = assignImageToZone(img, zones);
+          return assigned && assigned.sticky.id === zone.sticky.id;
+        });
+      }
+
+      const sortedGroup = sortImagesForNumbering(imagesForThisZone);
+      const actualIndex = Math.max(
+        0,
+        sortedGroup.findIndex(img => img.id === image.id)
+      );
+      const number = (startIndex + actualIndex).toString().padStart(3, '0');
+
+      return {
+        base: `${mainName}_${frameName}_${innerName}`,
+        number,
+        hasSd
+      };
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -534,122 +697,6 @@
         statusEl.classList.remove('status-ok', 'status-error');
         if (type === 'ok') statusEl.classList.add('status-ok');
         if (type === 'error') statusEl.classList.add('status-error');
-      }
-
-      async function getDownloadMeta(boardId, imageId) {
-        const metaResp = await fetch(
-          `https://api.miro.com/v2/boards/${boardId}/items/${imageId}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
-            },
-          },
-        );
-
-        if (!metaResp.ok) {
-          const txt = await metaResp.text();
-          throw new Error(`meta error ${metaResp.status}: ${txt}`);
-        }
-
-        const metaJson = await metaResp.json();
-        const imageUrl = metaJson?.data?.imageUrl;
-        if (!imageUrl) {
-          throw new Error('no imageUrl in data');
-        }
-
-        const urlObj = new URL(imageUrl);
-        urlObj.searchParams.set('format', 'original');
-        urlObj.searchParams.set('redirect', 'false');
-
-        const resourceResp = await fetch(urlObj.toString(), {
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
-          },
-        });
-
-        if (!resourceResp.ok) {
-          const txt = await resourceResp.text();
-          throw new Error(`resource error ${resourceResp.status}: ${txt}`);
-        }
-
-        const resourceJson = await resourceResp.json();
-        const downloadUrl = resourceJson.url;
-        if (!downloadUrl) {
-          throw new Error('no url in resource response');
-        }
-
-        return { metaJson, imageUrl, downloadUrl };
-      }
-
-      function buildStructuredNameData(selection, image, startIndex, indexWithinGroup) {
-        const frames = selection.filter(item => item.type === 'frame');
-        const stickies = selection.filter(item => item.type === 'sticky_note');
-        const images = selection.filter(item => item.type === 'image');
-
-        const mainSticky = findMainColumnSticky(stickies, frames);
-        const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
-
-        const targetFrame = frames.find(frame => rectContainsCenterOfItem(getRect(frame), image));
-        if (!targetFrame) {
-          return {
-            base: `${mainName}_frame_item`,
-            number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
-            hasSd: false
-          };
-        }
-
-        const frameRect = getRect(targetFrame);
-        const outsideStickies = stickies.filter(sticky => !pointInRect(getRect(sticky).cx, getRect(sticky).cy, frameRect));
-        const frameLabelSticky = findFrameLabelSticky(targetFrame, outsideStickies);
-        const frameName = sanitizePart(frameLabelSticky ? getItemText(frameLabelSticky) : '', 'frame');
-
-        const innerStickies = findInnerStickies(targetFrame, stickies);
-        const sdStickies = innerStickies.filter(isSdSticky);
-        const typeStickies = innerStickies.filter(sticky => {
-          const txt = sanitizePart(getItemText(sticky), '');
-          return txt && txt !== 'sd';
-        });
-
-        if (!typeStickies.length) {
-          return {
-            base: `${mainName}_${frameName}_image`,
-            number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
-            hasSd: imageHasSd(image, sdStickies)
-          };
-        }
-
-        const zones = buildTypeZones(targetFrame, typeStickies);
-        const zone = assignImageToZone(image, zones);
-
-        const innerName = sanitizePart(
-          zone ? getItemText(zone.sticky) : '',
-          'image'
-        );
-
-        const hasSd = imageHasSd(image, sdStickies);
-
-        let imagesForThisZone = images.filter(img => rectContainsCenterOfItem(frameRect, img));
-        if (zone) {
-          imagesForThisZone = imagesForThisZone.filter(img => {
-            const assigned = assignImageToZone(img, zones);
-            return assigned && assigned.sticky.id === zone.sticky.id;
-          });
-        }
-
-        const sortedGroup = sortImagesForNumbering(imagesForThisZone);
-        const actualIndex = Math.max(
-          0,
-          sortedGroup.findIndex(img => img.id === image.id)
-        );
-        const number = (startIndex + actualIndex).toString().padStart(3, '0');
-
-        return {
-          base: `${mainName}_${frameName}_${innerName}`,
-          number,
-          hasSd
-        };
       }
 
       async function downloadSelectedImages() {
