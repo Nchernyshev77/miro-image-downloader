@@ -2,93 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=jqlBcIILw71oJUX4I8uydJKJsly9NHl9AEZuX3E0WZXOrn8YRdn_DngTzFpgNwMjnv841Wf0Jr0HG5cIC79MxgciHkfNI70Rhucdve13o9jDqf-ov7v-oormrLEiUWqMEeowi_XZzzd1s2qxSjtxz3vyDM3bO1DmUqGkZzJIaqdA5pLMu-Td92V-voCsWHHcN7-sCkp-3mbXMvgahgG7urtV9FYSlF9hsWL9CVXDI-5pUAJu-SRf56Z53QaOa8wzkdR_HSdiGFCBMjTOqrcuLg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMGU4ZjA3MWY2YmQ3N2I0MjQ4MTQ1OTk5ZSZ0cz00OTMyMzkmcD1mcyZjaWQ9MSZzaWc9OGMxNjg3MmM2ZjJlYzQzMTFmNWQ3NjcxYjNhNWZiYTRlZmIxOTk5ZWY0NDdjYjhkMmNhZjgwZmEzNTQzN2FmMSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <title>Miro Selection Debug</title>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=jmgwVtrYKspn_qI0S4beiA_XuZMtgilWBZUdwuaefBJ55GP3R5NbJZY_5GkTDIi-JmswCAsGu-0zZItxvODqURwIxVpUolB1vu70J9geMhUwjvoJTjC1or0I-pye-9juqnslAkX6ObiFS25TObtQsiP4sn8RIbSseJTBVJKBKGby_CfJnl_CkRmCONoe-CL57nr-CMUYgHYvBJTBFAl-GnA9X7QA0vzVkATiRRa1M_gSBrcahkPcS-0fw4Zzoblqrpeg0v3zZ6XUDmNl9RRnNA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMGIzMDA3MWZkOWFjNDE0MDJhOTM0NjQ0MCZ0cz00OTMyMzkmcD1mcyZjaWQ9MSZzaWc9NGM1OGMyMjdjMDc4M2RjZTFhNDQ4N2VmNTNmOWNkMzEzNWM2ZjliMWNhYmMxZGM1M2IyMmUwNjQ5MDQzMGEyYiZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
-    :root { --accent: #4262ff; }
-    * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 20px 18px;
+      padding: 18px;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #fff;
       color: #111827;
       font-size: 13px;
     }
-    .card { border: none; box-shadow: none; padding: 0; background: transparent; }
-    .section { padding: 10px 0 4px; margin-bottom: 12px; }
-    .section-title { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 8px; }
-    .field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-    label { font-size: 12px; color: #4b5563; }
-    input[type="text"] {
-      width: 100%; font-size: 13px; padding: 7px 9px; border-radius: 8px;
-      border: 1px solid #d1d5db; outline: none; background: #fff;
-    }
-    input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(66, 98, 255, 0.15); }
-    .choice-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-    .choice { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4b5563; cursor: pointer; user-select: none; }
-    .choice input { margin: 0; }
-    .actions { margin-top: 14px; display: flex; justify-content: center; align-items: center; }
+    .section { margin-bottom: 14px; }
+    .title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+    .hint { font-size: 12px; color: #4b5563; margin-bottom: 12px; white-space: pre-line; }
     button {
-      padding: 11px 24px; font-size: 14px; font-weight: 500; border-radius: 999px;
-      border: none; cursor: pointer; background: var(--accent); color: #fff; min-width: 140px;
+      padding: 11px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: #4262ff;
+      color: white;
+      min-width: 160px;
     }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .progress-container { margin-top: 12px; }
-    .progress-bar-bg { width: 100%; height: 6px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
-    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width 0.2s ease-out; }
-    .progress-label { margin-top: 6px; font-size: 14px; font-weight: 600; text-align: center; color: #111827; }
-    #status { margin-top: 10px; font-size: 12px; color: #4b5563; white-space: pre-line; text-align: center; }
-    .status-ok { color: #15803d; }
-    .status-error { color: #b91c1c; }
+    button:disabled { opacity: 0.6; cursor: default; }
+    #status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #374151;
+      white-space: pre-line;
+    }
+    #output {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #f9fafb;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      max-height: 70vh;
+      overflow: auto;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="section">
-      <div class="section-title">File naming</div>
-      <div class="choice-row">
-        <label class="choice"><input type="radio" name="nameMode" id="nameModeMiro" value="miro" checked /><span>Use Miro object name</span></label>
-        <label class="choice"><input type="radio" name="nameMode" id="nameModeCustom" value="custom" /><span>Use custom name</span></label>
-        <label class="choice"><input type="radio" name="nameMode" id="nameModeStructured" value="structured" /><span>Use board structure naming</span></label>
-      </div>
-      <div class="field-row" id="baseNameRow" style="display:none;">
-        <label for="baseName">Name</label>
-        <input type="text" id="baseName" placeholder="Image name" />
-      </div>
-      <div class="field-row">
-        <label for="prefixInput">Prefix</label>
-        <input type="text" id="prefixInput" placeholder="Prefix image name" />
-      </div>
-      <div class="field-row">
-        <label for="suffixInput">Suffix</label>
-        <input type="text" id="suffixInput" placeholder="Image name suffix" />
-      </div>
-    </div>
+  <div class="section">
+    <div class="title">Selection debug</div>
+    <div class="hint">Select:
+- main sticky
+- frame labels
+- inner type labels
+- frames
+- images
+- SD stickers
 
-    <div class="section">
-      <div class="section-title">Numbering</div>
-      <div class="field-row">
-        <label for="startIndex">Start index</label>
-        <input type="text" id="startIndex" value="1" />
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="downloadBtn">Download</button>
-    </div>
-
-    <div class="progress-container">
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-      <div class="progress-label" id="progressLabel"></div>
-    </div>
-
+Then click the button. The panel will show what it thinks each object is.</div>
+    <button id="debugBtn">Analyze selection</button>
     <div id="status"></div>
+    <div id="output"></div>
   </div>
 
   <script>
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_l1yw4j6f0VtRZuCWZQ4NVMAzyFk';
-
     function htmlToText(value) {
       if (!value) return '';
       const div = document.createElement('div');
@@ -101,37 +78,8 @@
         .trim()
         .toLowerCase()
         .replace(/<[^>]*>/g, '')
-        .replace(/[\/\\:*?"<>|]+/g, ' ')
-        .replace(/\s+/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    }
-
-    function sanitizePart(text, fallback = 'item') {
-      const n = normalizeName(text);
-      return n || fallback;
-    }
-
-    function extractBaseNameFromUrl(url) {
-      try {
-        const u = new URL(url);
-        const file = (u.pathname.split('/').pop() || '').trim();
-        if (!file) return '';
-        return decodeURIComponent(file.replace(/\.[^/.]+$/, ''));
-      } catch (e) {
-        return '';
-      }
-    }
-
-    function extractNameFromMetadata(metadata) {
-      if (!metadata || typeof metadata !== 'object') return '';
-      for (const key of Object.keys(metadata)) {
-        const ns = metadata[key];
-        if (!ns || typeof ns !== 'object') continue;
-        const candidate = (ns.fileName || ns.filename || ns.imageName || ns.name || ns.title || '').trim();
-        if (candidate) return candidate;
-      }
-      return '';
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     function getItemText(item) {
@@ -144,6 +92,7 @@
         item.data && item.data.text,
         item.data && item.data.title
       ];
+
       for (const candidate of candidates) {
         if (!candidate) continue;
         const txt = htmlToText(String(candidate));
@@ -157,14 +106,15 @@
       const y = item.y ?? (item.position && item.position.y) ?? 0;
       const width = item.width ?? (item.geometry && item.geometry.width) ?? 0;
       const height = item.height ?? (item.geometry && item.geometry.height) ?? 0;
+
       return {
         x, y, width, height,
         left: x - width / 2,
         right: x + width / 2,
         top: y - height / 2,
         bottom: y + height / 2,
-        cx: x, cy: y,
-        area: width * height
+        cx: x,
+        cy: y
       };
     }
 
@@ -174,422 +124,299 @@
 
     function rectContainsCenter(rect, item, pad = 0) {
       const r = getRect(item);
-      return pointInRect(r.cx, r.cy, {
-        left: rect.left - pad,
-        right: rect.right + pad,
-        top: rect.top - pad,
-        bottom: rect.bottom + pad
+      return pointInRect(
+        r.cx,
+        r.cy,
+        {
+          left: rect.left - pad,
+          right: rect.right + pad,
+          top: rect.top - pad,
+          bottom: rect.bottom + pad
+        }
+      );
+    }
+
+    function verticalOverlap(a, b) {
+      const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const minH = Math.max(1, Math.min(a.height, b.height));
+      return overlap / minH;
+    }
+
+    function area(item) {
+      const r = getRect(item);
+      return r.width * r.height;
+    }
+
+    function formatItem(item) {
+      const r = getRect(item);
+      return {
+        id: item.id,
+        type: item.type,
+        text: getItemText(item),
+        x: Math.round(r.x),
+        y: Math.round(r.y),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        top: Math.round(r.top),
+        bottom: Math.round(r.bottom)
+      };
+    }
+
+    function findMainSticky(labels, frames) {
+      const outside = labels.filter(label => {
+        return !frames.some(frame => rectContainsCenter(getRect(frame), label, 10));
       });
-    }
 
-    function sortImagesForNumbering(images) {
-      return [...images].sort((a, b) => {
-        const ra = getRect(a);
-        const rb = getRect(b);
-        const rowThreshold = Math.max(10, Math.min(ra.height, rb.height) * 0.35);
-        if (Math.abs(ra.top - rb.top) > rowThreshold) return ra.top - rb.top;
-        return ra.left - rb.left;
-      });
-    }
-
-    function isSticky(item) {
-      return item.type === 'sticky_note';
-    }
-
-    function findMainColumnSticky(stickies, frames) {
-      const outside = stickies.filter(sticky => !frames.some(frame => rectContainsCenter(getRect(frame), sticky, 10)));
       if (!outside.length) return null;
+
       return [...outside].sort((a, b) => {
         const ra = getRect(a);
         const rb = getRect(b);
-        if (Math.abs(ra.top - rb.top) > 20) return ra.top - rb.top;
-        return rb.area - ra.area;
+        if (Math.abs(ra.top - rb.top) > 1) return ra.top - rb.top;
+        return area(b) - area(a);
       })[0];
     }
 
-    function findFrameLabelSticky(frame, stickies, mainStickyId) {
+    function findFrameLabelCandidates(frame, labels) {
       const fr = getRect(frame);
-      const maxGap = Math.max(320, fr.width * 0.7);
-      const candidates = stickies
-        .filter(sticky => sticky.id !== mainStickyId)
-        .map(sticky => {
-          const sr = getRect(sticky);
-          const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return null;
+      const maxGap = Math.max(260, fr.width * 0.5);
 
-          const gap = fr.left - sr.right;
-          if (gap < -20 || gap > maxGap) return null;
-          if (sr.cy < fr.top - sr.height * 0.6 || sr.cy > fr.bottom + sr.height * 0.6) return null;
+      return labels
+        .map(label => {
+          const lr = getRect(label);
+          const txt = normalizeName(getItemText(label));
+          if (!txt || txt === 'sd') return null;
 
-          const score = gap * 3 - sr.area * 0.01 + Math.abs(fr.cy - sr.cy);
-          return { sticky, score };
+          const leftGap = fr.left - lr.right;
+          const isLeft = leftGap >= -20 && leftGap <= maxGap;
+          if (!isLeft) return null;
+
+          const overlap = verticalOverlap(fr, lr);
+          const verticalDistance = Math.abs(fr.cy - lr.cy);
+          const score = leftGap * 2 + verticalDistance - overlap * 100;
+
+          return {
+            label,
+            score,
+            leftGap: Math.round(leftGap),
+            verticalDistance: Math.round(verticalDistance),
+            overlap: Number(overlap.toFixed(2))
+          };
         })
         .filter(Boolean)
         .sort((a, b) => a.score - b.score);
-
-      return candidates.length ? candidates[0].sticky : null;
     }
 
-    function findInnerTypeStickies(frame, stickies) {
+    function findInnerLabelCandidates(frame, labels) {
       const fr = getRect(frame);
-      const leftBand = fr.left + fr.width * 0.38;
-      const candidates = stickies.filter(sticky => {
-        const sr = getRect(sticky);
-        const text = sanitizePart(getItemText(sticky), '');
-        if (!text || text === 'sd') return false;
-        if (sr.cx < fr.left || sr.cx > leftBand) return false;
-        if (sr.cy < fr.top || sr.cy > fr.bottom) return false;
-        if (sr.area < 1200) return false;
-        if (sr.width > fr.width * 0.45) return false;
-        if (sr.height > fr.height * 0.25) return false;
-        return true;
-      });
+      const pad = Math.max(16, Math.min(fr.width, fr.height) * 0.02);
 
-      return candidates.sort((a, b) => getRect(a).top - getRect(b).top);
+      return labels
+        .map(label => {
+          const lr = getRect(label);
+          const txt = normalizeName(getItemText(label));
+          if (!txt) return null;
+
+          const inside =
+            lr.cx >= fr.left - pad &&
+            lr.cx <= fr.left + fr.width * 0.40 &&
+            lr.cy >= fr.top - pad &&
+            lr.cy <= fr.bottom + pad;
+
+          if (!inside) return null;
+
+          const reasonableWidth = lr.width <= fr.width * 0.40;
+          const reasonableHeight = lr.height <= fr.height * 0.28;
+
+          if (!reasonableWidth || !reasonableHeight) return null;
+
+          return {
+            label,
+            text: txt,
+            left: Math.round(lr.left),
+            top: Math.round(lr.top),
+            width: Math.round(lr.width),
+            height: Math.round(lr.height),
+            area: Math.round(lr.width * lr.height),
+            isSd: txt === 'sd'
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.top - b.top);
     }
 
-    function findSdStickiesForFrame(frame, stickies) {
-      const fr = getRect(frame);
-      return stickies.filter(sticky => {
-        const sr = getRect(sticky);
-        const text = sanitizePart(getItemText(sticky), '');
-        return text === 'sd' && rectContainsCenter(fr, sticky, 10);
-      });
+    function findFrameForImage(image, frames) {
+      return frames.find(frame => rectContainsCenter(getRect(frame), image, 4)) || null;
     }
 
-    function buildZonesForFrame(frame, typeStickies) {
+    function findNearestInnerLabelForImage(image, innerLabels, frame) {
+      const ir = getRect(image);
       const fr = getRect(frame);
-      return typeStickies.map((sticky, index) => {
-        const sr = getRect(sticky);
-        const next = typeStickies[index + 1] ? getRect(typeStickies[index + 1]) : null;
-        const top = Math.max(fr.top, sr.top - sr.height * 0.05);
-        let bottom = next
-          ? next.top - Math.max(next.height * 0.12, 8)
+
+      const typeLabels = innerLabels.filter(x => !x.isSd);
+
+      const prepared = typeLabels.map((entry, index) => {
+        const sr = getRect(entry.label);
+        const next = typeLabels[index + 1];
+        const nextRect = next ? getRect(next.label) : null;
+
+        const lowerBound = nextRect
+          ? nextRect.top - Math.max(nextRect.height * 0.12, 10)
           : fr.bottom;
-        if (bottom < top + 8) {
-          bottom = next ? (sr.bottom + next.top) / 2 : fr.bottom;
-        }
+
+        const imageIsHorizontallyRight = ir.cx >= sr.right - 10;
+        const imageWithinVerticalBand = ir.cy >= sr.top - sr.height * 0.10 && ir.cy <= lowerBound;
+
+        const distance = Math.abs(ir.cy - sr.cy) * 2 + Math.max(0, sr.right - ir.cx) * 3;
+
         return {
-          sticky,
-          stickyRect: sr,
-          zone: {
-            left: Math.max(fr.left, sr.right - 2),
-            right: fr.right,
-            top,
-            bottom: Math.min(bottom, fr.bottom)
-          }
+          entry,
+          lowerBound: Math.round(lowerBound),
+          imageIsHorizontallyRight,
+          imageWithinVerticalBand,
+          distance: Math.round(distance)
         };
       });
+
+      const strict = prepared
+        .filter(x => x.imageIsHorizontallyRight && x.imageWithinVerticalBand)
+        .sort((a, b) => a.distance - b.distance);
+
+      if (strict.length) return strict[0];
+
+      const fallback = prepared
+        .filter(x => x.imageIsHorizontallyRight)
+        .sort((a, b) => a.distance - b.distance);
+
+      return fallback[0] || null;
     }
 
-    function assignImageToTypeByNearestLeftSticky(image, zones) {
+    function imageHasSd(image, sdLabels) {
       const ir = getRect(image);
-      const candidates = zones
-        .map(z => {
-          const sr = z.stickyRect;
-          if (ir.cx < sr.right - 5) return null;
-          const gapX = Math.max(0, ir.left - sr.right);
-          const verticalDistance = Math.abs(ir.cy - sr.cy);
-          const inVerticalWindow = ir.cy >= z.zone.top && ir.cy <= z.zone.bottom;
-          const verticalPenalty = inVerticalWindow ? 0 : Math.min(400, Math.abs(ir.cy - Math.max(z.zone.top, Math.min(ir.cy, z.zone.bottom))) * 4);
-          const score = gapX * 0.2 + verticalDistance * 2 + verticalPenalty;
-          return { zone: z, score };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.score - b.score);
+      const expand = Math.max(12, Math.min(ir.width, ir.height) * 0.18);
 
-      return candidates.length ? candidates[0].zone : null;
-    }
-
-    function imageHasSd(image, sdStickies) {
-      const ir = getRect(image);
       const expanded = {
-        left: ir.left - 12,
-        right: ir.right + 12,
-        top: ir.top - 12,
-        bottom: ir.bottom + 12
+        left: ir.left - expand,
+        right: ir.right + expand,
+        top: ir.top - expand,
+        bottom: ir.bottom + expand
       };
-      return sdStickies.some(sd => {
-        const sr = getRect(sd);
+
+      return sdLabels.some(sd => {
+        const sr = getRect(sd.label);
         return pointInRect(sr.cx, sr.cy, expanded);
       });
     }
 
-    async function getDownloadMeta(boardId, imageId) {
-      const metaResp = await fetch(`https://api.miro.com/v2/boards/${boardId}/items/${imageId}`, {
-        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
-      });
-      if (!metaResp.ok) {
-        const txt = await metaResp.text();
-        throw new Error(`meta error ${metaResp.status}: ${txt}`);
-      }
-      const metaJson = await metaResp.json();
-      const imageUrl = metaJson?.data?.imageUrl;
-      if (!imageUrl) throw new Error('no imageUrl in data');
-
-      const urlObj = new URL(imageUrl);
-      urlObj.searchParams.set('format', 'original');
-      urlObj.searchParams.set('redirect', 'false');
-
-      const resourceResp = await fetch(urlObj.toString(), {
-        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
-      });
-      if (!resourceResp.ok) {
-        const txt = await resourceResp.text();
-        throw new Error(`resource error ${resourceResp.status}: ${txt}`);
-      }
-      const resourceJson = await resourceResp.json();
-      const downloadUrl = resourceJson.url;
-      if (!downloadUrl) throw new Error('no url in resource response');
-      return { metaJson, imageUrl, downloadUrl };
-    }
-
-    function buildStructuredNameData(selection, image, startIndex, indexWithinSelection) {
-      const frames = selection.filter(item => item.type === 'frame');
-      const stickies = selection.filter(isSticky);
-      const images = selection.filter(item => item.type === 'image');
-
-      const mainSticky = findMainColumnSticky(stickies, frames);
-      const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
-
-      const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 4));
-      if (!targetFrame) {
-        return {
-          base: `${mainName}_frame_item`,
-          number: String(startIndex + indexWithinSelection).padStart(3, '0'),
-          hasSd: false
-        };
-      }
-
-      const fr = getRect(targetFrame);
-      const outsideStickies = stickies.filter(sticky => !rectContainsCenter(fr, sticky, 8));
-      const frameLabel = findFrameLabelSticky(targetFrame, outsideStickies, mainSticky ? mainSticky.id : null);
-      const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
-
-      const insideStickies = stickies.filter(sticky => rectContainsCenter(fr, sticky, 8));
-      const sdStickies = findSdStickiesForFrame(targetFrame, insideStickies);
-      const typeStickies = findInnerTypeStickies(targetFrame, insideStickies);
-
-      if (!typeStickies.length) {
-        return {
-          base: `${mainName}_${frameName}_item`,
-          number: String(startIndex + indexWithinSelection).padStart(3, '0'),
-          hasSd: imageHasSd(image, sdStickies)
-        };
-      }
-
-      const zones = buildZonesForFrame(targetFrame, typeStickies);
-      const assignedZone = assignImageToTypeByNearestLeftSticky(image, zones);
-      const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
-      const hasSd = imageHasSd(image, sdStickies);
-
-      const imagesInsideFrame = images.filter(img => rectContainsCenter(fr, img, 2));
-      const imagesForGroup = imagesInsideFrame.filter(img => {
-        const z = assignImageToTypeByNearestLeftSticky(img, zones);
-        return z && assignedZone && z.sticky.id === assignedZone.sticky.id;
-      });
-
-      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : imagesInsideFrame);
-      const idx = Math.max(0, sortedGroup.findIndex(img => img.id === image.id));
-      const number = String(startIndex + idx).padStart(3, '0');
-
-      return {
-        base: `${mainName}_${frameName}_${innerName}`,
-        number,
-        hasSd
-      };
+    function print(obj) {
+      return JSON.stringify(obj, null, 2);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       const statusEl = document.getElementById('status');
-      const btn = document.getElementById('downloadBtn');
-      const nameModeMiro = document.getElementById('nameModeMiro');
-      const nameModeCustom = document.getElementById('nameModeCustom');
-      const nameModeStructured = document.getElementById('nameModeStructured');
-      const baseNameRow = document.getElementById('baseNameRow');
-      const baseNameInput = document.getElementById('baseName');
-      const prefixInput = document.getElementById('prefixInput');
-      const suffixInput = document.getElementById('suffixInput');
-      const startIndexInput = document.getElementById('startIndex');
-      const progressFill = document.getElementById('progressFill');
-      const progressLabel = document.getElementById('progressLabel');
+      const outputEl = document.getElementById('output');
+      const btn = document.getElementById('debugBtn');
 
-      function updateNameModeVisibility() {
-        baseNameRow.style.display = nameModeCustom.checked ? 'flex' : 'none';
-      }
-      nameModeMiro.addEventListener('change', updateNameModeVisibility);
-      nameModeCustom.addEventListener('change', updateNameModeVisibility);
-      nameModeStructured.addEventListener('change', updateNameModeVisibility);
-      updateNameModeVisibility();
-
-      function resetProgress() {
-        progressFill.style.width = '0%';
-        progressLabel.textContent = '';
-      }
-
-      function setProgress(current, total) {
-        if (!total) return;
-        const safeCurrent = Math.min(Math.max(current, 0), total);
-        const percent = Math.round((safeCurrent / total) * 100);
-        progressFill.style.width = percent + '%';
-        progressLabel.textContent = `${safeCurrent}/${total}`;
-      }
-
-      function setStatus(text, type = 'normal') {
-        console.log('[ImageDownloader]', text);
+      function setStatus(text) {
+        console.log('[SelectionDebug]', text);
         statusEl.textContent = text;
-        statusEl.classList.remove('status-ok', 'status-error');
-        if (type === 'ok') statusEl.classList.add('status-ok');
-        if (type === 'error') statusEl.classList.add('status-error');
       }
 
-      async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN || ACCESS_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
-          setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
-          resetProgress();
-          return;
-        }
-
+      btn.addEventListener('click', async () => {
         btn.disabled = true;
-        resetProgress();
-
+        outputEl.textContent = '';
         try {
-          setStatus('Reading board info...');
-          const boardInfo = await miro.board.getInfo();
-          const boardId = boardInfo.id;
-
+          setStatus('Reading selection...');
           const selection = await miro.board.getSelection();
+
           if (!selection.length) {
-            setStatus('No items selected on the board.', 'error');
+            setStatus('Nothing selected.');
+            btn.disabled = false;
             return;
           }
 
+          const frames = selection.filter(item => item.type === 'frame');
+          const labels = selection.filter(item =>
+            item.type === 'sticky_note' ||
+            item.type === 'sticker' ||
+            item.type === 'shape' ||
+            item.type === 'text'
+          );
           const images = selection.filter(item => item.type === 'image');
-          if (!images.length) {
-            setStatus('Selection does not contain image items.', 'error');
-            return;
-          }
 
-          const useMiroNames = nameModeMiro.checked;
-          const useStructuredNames = nameModeStructured.checked;
+          const debug = {
+            summary: {
+              total: selection.length,
+              frames: frames.length,
+              labels: labels.length,
+              images: images.length
+            },
+            mainSticky: null,
+            frames: []
+          };
 
-          const baseNameRaw = baseNameInput.value.trim();
-          const prefixRaw = prefixInput.value.trim();
-          const suffixRaw = suffixInput.value.trim();
-          const startIndex = parseInt(startIndexInput.value, 10) || 1;
+          const mainSticky = findMainSticky(labels, frames);
+          debug.mainSticky = mainSticky ? formatItem(mainSticky) : null;
 
-          const prefix = normalizeName(prefixRaw);
-          const suffix = normalizeName(suffixRaw);
-          const baseName = sanitizePart(baseNameRaw, 'image');
+          for (const frame of frames) {
+            const fr = getRect(frame);
+            const outsideLabels = labels.filter(label => !rectContainsCenter(fr, label, 8));
+            const frameLabelCandidates = findFrameLabelCandidates(frame, outsideLabels);
+            const chosenFrameLabel = frameLabelCandidates.length ? frameLabelCandidates[0].label : null;
 
-          const total = images.length;
-          setStatus(`Found ${total} images. Fetching data from REST API...`);
-          setProgress(0, total);
+            const innerLabels = findInnerLabelCandidates(frame, labels);
+            const sdLabels = innerLabels.filter(x => x.isSd);
+            const typeLabels = innerLabels.filter(x => !x.isSd);
 
-          const downloaded = [];
-          const errors = [];
+            const imagesInFrame = images.filter(img => rectContainsCenter(fr, img, 2));
 
-          for (let i = 0; i < total; i++) {
-            const img = images[i];
-            const prefixLabel = `(${i + 1}/${total}) [${img.id}]`;
+            const frameBlock = {
+              frame: formatItem(frame),
+              chosenFrameLabel: chosenFrameLabel ? formatItem(chosenFrameLabel) : null,
+              frameLabelCandidates: frameLabelCandidates.slice(0, 8).map(x => ({
+                item: formatItem(x.label),
+                score: x.score,
+                leftGap: x.leftGap,
+                verticalDistance: x.verticalDistance,
+                overlap: x.overlap
+              })),
+              innerLabels: innerLabels.map(x => ({
+                item: formatItem(x.label),
+                isSd: x.isSd
+              })),
+              imagesInFrame: []
+            };
 
-            try {
-              setStatus(`${prefixLabel} Preparing file...`);
-              const { metaJson, imageUrl, downloadUrl } = await getDownloadMeta(boardId, img.id);
-
-              const fileResp = await fetch(downloadUrl);
-              if (!fileResp.ok) {
-                const txt = await fileResp.text();
-                throw new Error(`download error ${fileResp.status}: ${txt}`);
-              }
-
-              const blob = await fileResp.blob();
-              const blobUrl = URL.createObjectURL(blob);
-
-              const extFromType = (() => {
-                const ct = fileResp.headers.get('Content-Type') || '';
-                if (ct.includes('jpeg')) return 'jpg';
-                if (ct.includes('png')) return 'png';
-                if (ct.includes('gif')) return 'gif';
-                if (ct.includes('svg')) return 'svg';
-                if (ct.includes('webp')) return 'webp';
-                return 'bin';
-              })();
-
-              let finalName = '';
-
-              if (useStructuredNames) {
-                const structured = buildStructuredNameData(selection, img, startIndex, i);
-                const parts = [];
-                if (prefix) parts.push(prefix);
-                parts.push(structured.base);
-                if (suffix) parts.push(suffix);
-                if (structured.hasSd) parts.push('sd');
-                parts.push(structured.number);
-                finalName = parts.filter(Boolean).join('_');
-              } else if (useMiroNames) {
-                const nameFromMetadata = extractNameFromMetadata(metaJson.metadata || {});
-                const title = (metaJson.title && metaJson.title.trim()) || '';
-                const urlBaseName = extractBaseNameFromUrl(downloadUrl) || extractBaseNameFromUrl(imageUrl);
-                const junkNames = ['original', 'image'];
-                let miroNameRaw = nameFromMetadata || title || urlBaseName || '';
-                let miroName = junkNames.includes(String(miroNameRaw).toLowerCase()) ? '' : sanitizePart(miroNameRaw, '');
-                const fallbackName = `${baseName}_${String(startIndex + i).padStart(3, '0')}`;
-                const parts = [];
-                if (prefix) parts.push(prefix);
-                parts.push(miroName || fallbackName);
-                if (suffix) parts.push(suffix);
-                finalName = parts.filter(Boolean).join('_');
-              } else {
-                const num = String(startIndex + i).padStart(3, '0');
-                const parts = [];
-                if (prefix) parts.push(prefix);
-                parts.push(baseName);
-                if (suffix) parts.push(suffix);
-                parts.push(num);
-                finalName = parts.filter(Boolean).join('_');
-              }
-
-              const fileName = finalName + '.' + extFromType;
-              const a = document.createElement('a');
-              a.href = blobUrl;
-              a.download = fileName;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              URL.revokeObjectURL(blobUrl);
-              downloaded.push(fileName);
-            } catch (e) {
-              console.error('Unexpected error for image', img.id, e);
-              errors.push(`${prefixLabel} ${e.message || 'unexpected error'}`);
-            } finally {
-              setProgress(i + 1, total);
+            for (const img of imagesInFrame) {
+              const nearest = findNearestInnerLabelForImage(img, innerLabels, frame);
+              frameBlock.imagesInFrame.push({
+                image: formatItem(img),
+                nearestInnerLabel: nearest ? {
+                  item: formatItem(nearest.entry.label),
+                  lowerBound: nearest.lowerBound,
+                  imageIsHorizontallyRight: nearest.imageIsHorizontallyRight,
+                  imageWithinVerticalBand: nearest.imageWithinVerticalBand,
+                  distance: nearest.distance
+                } : null,
+                hasSd: imageHasSd(img, sdLabels)
+              });
             }
+
+            debug.frames.push(frameBlock);
           }
 
-          if (downloaded.length) {
-            let msg = `Done. Downloaded ${downloaded.length} files.`;
-            if (errors.length) msg += '\nSome errors:\n' + errors.join('\n');
-            setStatus(msg, errors.length ? 'error' : 'ok');
-          } else {
-            let msg = 'Failed to download any images.';
-            if (errors.length) msg += '\nDetails:\n' + errors.join('\n');
-            setStatus(msg, 'error');
-          }
-        } catch (err) {
-          console.error('Fatal error:', err);
-          setStatus('Unexpected error (see panel console): ' + (err.message || err), 'error');
+          console.log('[SelectionDebug] full debug', debug);
+          outputEl.textContent = print(debug);
+          setStatus('Done. Open console too: full debug object is printed there.');
+        } catch (e) {
+          console.error(e);
+          setStatus('Error: ' + (e.message || e));
+          outputEl.textContent = String(e.stack || e);
         } finally {
           btn.disabled = false;
         }
-      }
-
-      setStatus('Select images on the board and click Download.');
-      resetProgress();
-      console.log('[ImageDownloader] panel loaded');
-      btn.addEventListener('click', () => {
-        console.log('[ImageDownloader] button clicked');
-        downloadSelectedImages();
       });
     });
   </script>
