@@ -152,34 +152,21 @@
       return '';
     }
 
-    function getRect(item) {
-      const x = item.x ?? (item.position && item.position.x) ?? 0;
-      const y = item.y ?? (item.position && item.position.y) ?? 0;
-      const width = item.width ?? (item.geometry && item.geometry.width) ?? 0;
-      const height = item.height ?? (item.geometry && item.geometry.height) ?? 0;
-      return {
-        x, y, width, height,
-        left: x - width / 2,
-        right: x + width / 2,
-        top: y - height / 2,
-        bottom: y + height / 2,
-        cx: x, cy: y,
-        area: width * height
-      };
+    function isSticky(item) {
+      return item.type === 'sticky_note';
     }
 
     function pointInRect(x, y, rect) {
       return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
     }
 
-    function rectContainsCenter(rect, item, pad = 0) {
-      const r = getRect(item);
-      return pointInRect(r.cx, r.cy, {
-        left: rect.left - pad,
-        right: rect.right + pad,
-        top: rect.top - pad,
-        bottom: rect.bottom + pad
-      });
+    function expandRect(rect, padX, padY = padX) {
+      return {
+        left: rect.left - padX,
+        right: rect.right + padX,
+        top: rect.top - padY,
+        bottom: rect.bottom + padY
+      };
     }
 
     function rectOverlapArea(a, b) {
@@ -188,18 +175,8 @@
       return overlapX * overlapY;
     }
 
-    function sortImagesForNumbering(images) {
-      return [...images].sort((a, b) => {
-        const ra = getRect(a);
-        const rb = getRect(b);
-        const rowThreshold = Math.max(10, Math.min(ra.height, rb.height) * 0.35);
-        if (Math.abs(ra.top - rb.top) > rowThreshold) return ra.top - rb.top;
-        return ra.left - rb.left;
-      });
-    }
-
-    function isSticky(item) {
-      return item.type === 'sticky_note';
+    function horizontalOverlap(a, b) {
+      return Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
     }
 
     function verticalDistanceToRect(y, rect) {
@@ -220,53 +197,180 @@
       return Math.hypot(dx, dy);
     }
 
-    function pickNearestFrame(item, frames) {
-      if (!frames.length) return null;
-      const r = getRect(item);
-      const candidates = frames
-        .map(frame => {
-          const fr = getRect(frame);
-          const distance = distancePointToRect(r.cx, r.cy, fr);
-          return { frame, distance, fr };
-        })
-        .sort((a, b) => a.distance - b.distance);
-      return candidates[0].frame;
+    function flattenItems(items) {
+      const byId = new Map();
+
+      function add(item) {
+        if (!item || !item.id || byId.has(item.id)) return;
+        byId.set(item.id, item);
+
+        const nestedCandidates = [
+          item.children,
+          item.items
+        ];
+
+        for (const nested of nestedCandidates) {
+          if (Array.isArray(nested)) {
+            nested.forEach(add);
+          }
+        }
+      }
+
+      items.forEach(add);
+      return Array.from(byId.values());
     }
 
-    function pickContainingOrNearestFrame(item, frames) {
+    async function collectSelectedItems() {
+      const selection = await miro.board.getSelection();
+      return flattenItems(selection);
+    }
+
+    async function collectNamingItems(selectedItems) {
+      const byId = new Map(selectedItems.map(item => [item.id, item]));
+      const selectedFrames = selectedItems.filter(item => item.type === 'frame');
+
+      for (const frame of selectedFrames) {
+        if (typeof frame.getChildren !== 'function') continue;
+
+        try {
+          const children = await frame.getChildren();
+          for (const child of flattenItems(children)) {
+            if (!byId.has(child.id)) {
+              byId.set(child.id, child);
+            }
+          }
+        } catch (error) {
+          console.warn('[ImageDownloader] failed to load frame children', frame.id, error);
+        }
+      }
+
+      return Array.from(byId.values());
+    }
+
+    function createGeometry(items) {
+      const itemsById = new Map(items.map(item => [item.id, item]));
+      const rectCache = new Map();
+
+      function getNumber(value, fallback = 0) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : fallback;
+      }
+
+      function resolve(itemOrId) {
+        if (!itemOrId) return null;
+        return typeof itemOrId === 'string' ? itemsById.get(itemOrId) || null : itemOrId;
+      }
+
+      function getRect(itemOrId) {
+        const item = resolve(itemOrId);
+        if (!item) {
+          return {
+            x: 0, y: 0, width: 0, height: 0,
+            left: 0, right: 0, top: 0, bottom: 0,
+            cx: 0, cy: 0, area: 0
+          };
+        }
+
+        if (rectCache.has(item.id)) {
+          return rectCache.get(item.id);
+        }
+
+        const width = getNumber(item.width ?? (item.geometry && item.geometry.width), 0);
+        const height = getNumber(item.height ?? (item.geometry && item.geometry.height), 0);
+
+        let x = getNumber(item.x ?? (item.position && item.position.x), 0);
+        let y = getNumber(item.y ?? (item.position && item.position.y), 0);
+
+        if (item.relativeTo === 'parent_top_left' && item.parentId && itemsById.has(item.parentId)) {
+          const parentRect = getRect(item.parentId);
+          x = parentRect.left + x;
+          y = parentRect.top + y;
+        } else if (item.relativeTo === 'parent_center' && item.parentId && itemsById.has(item.parentId)) {
+          const parentRect = getRect(item.parentId);
+          x = parentRect.cx + x;
+          y = parentRect.cy + y;
+        }
+
+        const rect = {
+          x,
+          y,
+          width,
+          height,
+          left: x - width / 2,
+          right: x + width / 2,
+          top: y - height / 2,
+          bottom: y + height / 2,
+          cx: x,
+          cy: y,
+          area: width * height
+        };
+
+        rectCache.set(item.id, rect);
+        return rect;
+      }
+
+      return { itemsById, getRect };
+    }
+
+    function sortImagesForNumbering(images, geometry) {
+      return [...images].sort((a, b) => {
+        const ra = geometry.getRect(a);
+        const rb = geometry.getRect(b);
+        const rowThreshold = Math.max(10, Math.min(ra.height, rb.height) * 0.35);
+        if (Math.abs(ra.top - rb.top) > rowThreshold) return ra.top - rb.top;
+        return ra.left - rb.left;
+      });
+    }
+
+    function pickContainingOrNearestFrame(item, frames, geometry) {
+      if (!frames.length) return null;
+
+      if (item.parentId) {
+        const directParent = frames.find(frame => frame.id === item.parentId);
+        if (directParent) return directParent;
+      }
+
+      const itemRect = geometry.getRect(item);
       const containing = frames
-        .filter(frame => rectContainsCenter(getRect(frame), item, 20))
-        .sort((a, b) => getRect(a).area - getRect(b).area);
+        .filter(frame => pointInRect(itemRect.cx, itemRect.cy, expandRect(geometry.getRect(frame), 20)))
+        .sort((a, b) => geometry.getRect(a).area - geometry.getRect(b).area);
 
       if (containing.length) return containing[0];
-      return pickNearestFrame(item, frames);
+
+      return [...frames]
+        .map(frame => {
+          const fr = geometry.getRect(frame);
+          return { frame, distance: distancePointToRect(itemRect.cx, itemRect.cy, fr) };
+        })
+        .sort((a, b) => a.distance - b.distance)[0].frame;
     }
 
-    function findColumnHeaderStickyForFrame(frame, stickies, frames) {
-      const fr = getRect(frame);
+    function findColumnHeaderStickyForFrame(frame, stickies, frames, geometry) {
+      const fr = geometry.getRect(frame);
 
       const candidates = stickies
         .map(sticky => {
           const text = sanitizePart(getItemText(sticky), '');
           if (!text || text === 'sd') return null;
+          if (sticky.parentId) return null;
 
-          const sr = getRect(sticky);
-          if (rectContainsCenter(fr, sticky, 20)) return null;
+          const sr = geometry.getRect(sticky);
+          if (pointInRect(sr.cx, sr.cy, expandRect(fr, 20))) return null;
 
           const insideAnotherFrame = frames.some(otherFrame => {
             if (otherFrame.id === frame.id) return false;
-            return rectContainsCenter(getRect(otherFrame), sticky, 20);
+            return pointInRect(sr.cx, sr.cy, expandRect(geometry.getRect(otherFrame), 20));
           });
           if (insideAnotherFrame) return null;
 
           const gapTop = fr.top - sr.bottom;
-          if (gapTop < -40 || gapTop > Math.max(1200, fr.height * 2.2)) return null;
+          if (gapTop < -40 || gapTop > Math.max(1600, fr.height * 3.2)) return null;
 
-          const overlap = Math.min(fr.right, sr.right) - Math.max(fr.left, sr.left);
+          const overlap = horizontalOverlap(fr, sr);
           const centerDx = Math.abs(sr.cx - fr.cx);
-          if (overlap < -Math.max(180, fr.width * 0.2) && centerDx > Math.max(320, fr.width * 0.8)) return null;
+          if (overlap < Math.max(40, fr.width * 0.12) && centerDx > Math.max(320, fr.width * 0.8)) return null;
 
-          const score = gapTop * 1.8 + centerDx * 0.35 - Math.max(overlap, 0) * 0.25 - sr.area * 0.003;
+          const score = gapTop * 2 + centerDx * 0.35 - overlap * 0.2 - sr.area * 0.002;
           return { sticky, score };
         })
         .filter(Boolean)
@@ -275,25 +379,27 @@
       return candidates.length ? candidates[0].sticky : null;
     }
 
-    function findFrameLabelSticky(frame, stickies, excludedIds = new Set()) {
-      const fr = getRect(frame);
-      const maxGap = Math.max(420, fr.width * 1.0);
+    function findFrameLabelSticky(frame, stickies, excludedIds, geometry) {
+      const fr = geometry.getRect(frame);
 
       const candidates = stickies
         .filter(sticky => !excludedIds.has(sticky.id))
         .map(sticky => {
-          const sr = getRect(sticky);
           const text = sanitizePart(getItemText(sticky), '');
           if (!text || text === 'sd') return null;
-          if (rectContainsCenter(fr, sticky, 10)) return null;
+          if (sticky.parentId === frame.id) return null;
+
+          const sr = geometry.getRect(sticky);
+          if (pointInRect(sr.cx, sr.cy, expandRect(fr, 10))) return null;
 
           const gap = fr.left - sr.right;
-          if (gap < -40 || gap > maxGap) return null;
+          if (gap < -60 || gap > Math.max(500, fr.width * 1.1)) return null;
 
-          const verticalPenalty = verticalDistanceToRect(sr.cy, fr);
-          if (verticalPenalty > Math.max(420, fr.height * 0.45)) return null;
+          const overlapY = Math.max(0, Math.min(fr.bottom, sr.bottom) - Math.max(fr.top, sr.top));
+          const verticalPenalty = overlapY > 0 ? 0 : verticalDistanceToRect(sr.cy, fr);
+          if (verticalPenalty > Math.max(500, fr.height * 0.55)) return null;
 
-          const score = gap * 2 + verticalPenalty + Math.abs(sr.cy - fr.cy) * 0.15 - sr.area * 0.015;
+          const score = gap * 2 + verticalPenalty - overlapY * 0.1 - sr.area * 0.01;
           return { sticky, score };
         })
         .filter(Boolean)
@@ -302,97 +408,82 @@
       return candidates.length ? candidates[0].sticky : null;
     }
 
-    function belongsToInnerTypeColumn(sticky, frame) {
-      const sr = getRect(sticky);
-      const fr = getRect(frame);
-      const text = sanitizePart(getItemText(sticky), '');
-
-      if (!text || text === 'sd') return false;
-      if (!rectContainsCenter(fr, sticky, 25)) return false;
-
-      const maxLeftX = fr.left + Math.max(220, fr.width * 0.42);
-      const maxRightX = fr.left + Math.max(340, fr.width * 0.62);
-
-      if (sr.left > maxLeftX) return false;
-      if (sr.right > maxRightX) return false;
-      if (sr.top < fr.top - 30 || sr.bottom > fr.bottom + 30) return false;
-
-      return true;
+    function isItemInsideFrame(item, frame, geometry, pad = 20) {
+      const ir = geometry.getRect(item);
+      const fr = geometry.getRect(frame);
+      if (item.parentId === frame.id) return true;
+      return pointInRect(ir.cx, ir.cy, expandRect(fr, pad));
     }
 
-    function findInnerTypeStickies(frame, allStickies, excludedIds) {
+    function findInnerTypeStickies(frame, allStickies, excludedIds, geometry) {
+      const fr = geometry.getRect(frame);
+
       return allStickies
         .filter(sticky => {
           if (excludedIds.has(sticky.id)) return false;
-          return belongsToInnerTypeColumn(sticky, frame);
+
+          const text = sanitizePart(getItemText(sticky), '');
+          if (!text || text === 'sd') return false;
+          if (!isItemInsideFrame(sticky, frame, geometry, 25)) return false;
+
+          const sr = geometry.getRect(sticky);
+          if (sr.left > fr.left + fr.width * 0.55) return false;
+          if (sr.width > fr.width * 0.6) return false;
+          if (sr.height > fr.height * 0.3) return false;
+
+          return true;
         })
         .sort((a, b) => {
-          const ra = getRect(a);
-          const rb = getRect(b);
+          const ra = geometry.getRect(a);
+          const rb = geometry.getRect(b);
           if (Math.abs(ra.top - rb.top) > 8) return ra.top - rb.top;
           return ra.left - rb.left;
         });
     }
 
-    function findSdStickies(frame, allStickies, excludedIds) {
-      const fr = getRect(frame);
-
+    function findSdStickies(frame, allStickies, excludedIds, geometry) {
       return allStickies.filter(sticky => {
         if (excludedIds.has(sticky.id)) return false;
 
         const text = sanitizePart(getItemText(sticky), '');
         if (text !== 'sd') return false;
 
-        const sr = getRect(sticky);
-        return pointInRect(sr.cx, sr.cy, {
-          left: fr.left - 80,
-          right: fr.right + 80,
-          top: fr.top - 80,
-          bottom: fr.bottom + 80
-        });
+        return isItemInsideFrame(sticky, frame, geometry, 30);
       });
     }
 
-    function getImagesForFrame(frame, images) {
-      const fr = getRect(frame);
-      const padX = Math.max(120, fr.width * 0.03);
-      const padY = Math.max(180, fr.height * 0.10);
+    function getImagesForFrame(frame, images, geometry) {
+      const fr = geometry.getRect(frame);
+      const expandedFrame = expandRect(fr, Math.max(100, fr.width * 0.04), Math.max(120, fr.height * 0.08));
 
       return images.filter(img => {
-        const ir = getRect(img);
-        return (
-          ir.cx >= fr.left - padX &&
-          ir.cx <= fr.right + padX &&
-          ir.cy >= fr.top - padY &&
-          ir.cy <= fr.bottom + padY
-        );
+        if (img.parentId === frame.id) return true;
+        const ir = geometry.getRect(img);
+        return pointInRect(ir.cx, ir.cy, expandedFrame) || rectOverlapArea(ir, fr) > 0;
       });
     }
 
-    function buildTypeZonesForFrame(frame, typeStickies) {
-      const fr = getRect(frame);
+    function buildTypeZonesForFrame(frame, typeStickies, geometry) {
+      const fr = geometry.getRect(frame);
 
       return typeStickies.map((sticky, index) => {
-        const sr = getRect(sticky);
-        const next = typeStickies[index + 1] ? getRect(typeStickies[index + 1]) : null;
-
+        const sr = geometry.getRect(sticky);
+        const nextRect = typeStickies[index + 1] ? geometry.getRect(typeStickies[index + 1]) : null;
         const topPad = Math.max(12, sr.height * 0.15);
-        const nextPad = next ? Math.max(12, next.height * 0.15) : 0;
+        const nextPad = nextRect ? Math.max(12, nextRect.height * 0.15) : 0;
 
         const top = Math.max(fr.top, sr.top - topPad);
-        let bottom = next ? next.top - nextPad : fr.bottom;
-        bottom = Math.min(fr.bottom, bottom);
+        let bottom = nextRect ? Math.min(fr.bottom, nextRect.top - nextPad) : fr.bottom;
 
         if (bottom < top + 12) {
-          bottom = next ? Math.min(fr.bottom, (sr.bottom + next.top) / 2) : fr.bottom;
+          bottom = nextRect ? Math.min(fr.bottom, (sr.bottom + nextRect.top) / 2) : fr.bottom;
         }
 
         return {
           sticky,
-          stickyRect: sr,
           zone: {
             left: Math.max(fr.left, sr.left),
-            right: fr.right + Math.max(80, fr.width * 0.02),
+            right: fr.right,
             top,
             bottom
           }
@@ -400,20 +491,21 @@
       });
     }
 
-    function assignImageToTypeByZone(image, zones) {
-      const ir = getRect(image);
+    function assignImageToTypeByZone(image, zones, geometry) {
+      const ir = geometry.getRect(image);
 
       const candidates = zones
         .map(zone => {
+          if (ir.right < zone.zone.left) return null;
+
           const overlapArea = rectOverlapArea(ir, zone.zone);
           const centerInside = pointInRect(ir.cx, ir.cy, zone.zone);
-          const imageTouchesZone = ir.right >= zone.zone.left;
-          if (!imageTouchesZone) return null;
+
           if (!overlapArea && !centerInside) return null;
 
           const score =
             overlapArea +
-            (centerInside ? Math.max(1, ir.width * ir.height * 0.15) : 0) +
+            (centerInside ? Math.max(1, ir.area * 0.15) : 0) +
             Math.max(0, ir.right - zone.zone.left);
 
           return { zone, score };
@@ -424,17 +516,13 @@
       return candidates.length ? candidates[0].zone : null;
     }
 
-    function imageHasSd(image, sdStickies) {
-      const ir = getRect(image);
-      const expanded = {
-        left: ir.left - 14,
-        right: ir.right + 14,
-        top: ir.top - 14,
-        bottom: ir.bottom + 14
-      };
+    function imageHasSd(image, sdStickies, geometry) {
+      const ir = geometry.getRect(image);
+      const expandedImage = expandRect(ir, 14);
+
       return sdStickies.some(sd => {
-        const sr = getRect(sd);
-        return pointInRect(sr.cx, sr.cy, expanded);
+        const sr = geometry.getRect(sd);
+        return pointInRect(sr.cx, sr.cy, expandedImage);
       });
     }
 
@@ -446,6 +534,7 @@
         const txt = await metaResp.text();
         throw new Error(`meta error ${metaResp.status}: ${txt}`);
       }
+
       const metaJson = await metaResp.json();
       const imageUrl = metaJson?.data?.imageUrl;
       if (!imageUrl) throw new Error('no imageUrl in data');
@@ -461,71 +550,103 @@
         const txt = await resourceResp.text();
         throw new Error(`resource error ${resourceResp.status}: ${txt}`);
       }
+
       const resourceJson = await resourceResp.json();
       const downloadUrl = resourceJson.url;
       if (!downloadUrl) throw new Error('no url in resource response');
+
       return { metaJson, imageUrl, downloadUrl };
     }
 
-    function buildStructuredNameData(selection, image, startIndex, indexWithinSelection) {
-      const frames = selection.filter(item => item.type === 'frame');
-      const stickies = selection.filter(isSticky);
-      const images = selection.filter(item => item.type === 'image');
+    function buildStructuredContext(namingItems, selectedImages) {
+      const geometry = createGeometry(namingItems);
+      return {
+        geometry,
+        frames: namingItems.filter(item => item.type === 'frame'),
+        stickies: namingItems.filter(isSticky),
+        selectedImages
+      };
+    }
 
-      const targetFrame = pickContainingOrNearestFrame(image, frames);
+    function buildStructuredNameData(context, image, startIndex, indexWithinSelection) {
+      const { geometry, frames, stickies, selectedImages } = context;
+
+      const targetFrame = pickContainingOrNearestFrame(image, frames, geometry);
       if (!targetFrame) {
         return {
-          base: `group_frame_item`,
+          base: 'group_frame_item',
           number: String(startIndex + indexWithinSelection).padStart(3, '0'),
-          hasSd: false
+          hasSd: false,
+          debug: {
+            reason: 'frame_not_found',
+            imageId: image.id
+          }
         };
       }
 
-      const columnSticky = findColumnHeaderStickyForFrame(targetFrame, stickies, frames);
+      const columnSticky = findColumnHeaderStickyForFrame(targetFrame, stickies, frames, geometry);
       const mainName = sanitizePart(columnSticky ? getItemText(columnSticky) : '', 'group');
 
       const excludedIds = new Set();
       if (columnSticky) excludedIds.add(columnSticky.id);
 
-      const frameLabel = findFrameLabelSticky(targetFrame, stickies, excludedIds);
+      const frameLabel = findFrameLabelSticky(targetFrame, stickies, excludedIds, geometry);
       const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
       if (frameLabel) excludedIds.add(frameLabel.id);
 
-      const typeStickies = findInnerTypeStickies(targetFrame, stickies, excludedIds);
-      const sdStickies = findSdStickies(targetFrame, stickies, excludedIds);
+      const typeStickies = findInnerTypeStickies(targetFrame, stickies, excludedIds, geometry);
+      const sdStickies = findSdStickies(targetFrame, stickies, excludedIds, geometry);
 
       if (!typeStickies.length) {
-        const frameImages = getImagesForFrame(targetFrame, images);
-        const sortedFallback = sortImagesForNumbering(frameImages.length ? frameImages : [image]);
+        const frameImages = getImagesForFrame(targetFrame, selectedImages, geometry);
+        const sortedFallback = sortImagesForNumbering(frameImages.length ? frameImages : [image], geometry);
         const idxFallback = Math.max(0, sortedFallback.findIndex(img => img.id === image.id));
+
         return {
           base: `${mainName}_${frameName}_item`,
           number: String(startIndex + idxFallback).padStart(3, '0'),
-          hasSd: imageHasSd(image, sdStickies)
+          hasSd: imageHasSd(image, sdStickies, geometry),
+          debug: {
+            reason: 'inner_sticky_not_found',
+            imageId: image.id,
+            frameId: targetFrame.id,
+            columnStickyId: columnSticky ? columnSticky.id : null,
+            frameLabelId: frameLabel ? frameLabel.id : null,
+            innerStickyCount: 0
+          }
         };
       }
 
-      const zones = buildTypeZonesForFrame(targetFrame, typeStickies);
-      const assignedZone = assignImageToTypeByZone(image, zones);
+      const zones = buildTypeZonesForFrame(targetFrame, typeStickies, geometry);
+      const assignedZone = assignImageToTypeByZone(image, zones, geometry);
       const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
-      const hasSd = imageHasSd(image, sdStickies);
+      const hasSd = imageHasSd(image, sdStickies, geometry);
 
-      const imagesForFrame = getImagesForFrame(targetFrame, images);
+      const imagesForFrame = getImagesForFrame(targetFrame, selectedImages, geometry);
       const imagesForGroup = assignedZone
         ? imagesForFrame.filter(img => {
-            const zone = assignImageToTypeByZone(img, zones);
+            const zone = assignImageToTypeByZone(img, zones, geometry);
             return zone && zone.sticky.id === assignedZone.sticky.id;
           })
         : imagesForFrame;
 
-      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : imagesForFrame);
+      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : imagesForFrame, geometry);
       const idx = Math.max(0, sortedGroup.findIndex(img => img.id === image.id));
       const number = String(startIndex + idx).padStart(3, '0');
 
       return {
         base: `${mainName}_${frameName}_${innerName}`,
         number,
-        hasSd
+        hasSd,
+        debug: {
+          reason: assignedZone ? 'ok' : 'zone_not_found',
+          imageId: image.id,
+          frameId: targetFrame.id,
+          columnStickyId: columnSticky ? columnSticky.id : null,
+          frameLabelId: frameLabel ? frameLabel.id : null,
+          innerStickyId: assignedZone ? assignedZone.sticky.id : null,
+          innerStickyCount: typeStickies.length
+        }
       };
     }
 
@@ -546,6 +667,7 @@
       function updateNameModeVisibility() {
         baseNameRow.style.display = nameModeCustom.checked ? 'flex' : 'none';
       }
+
       nameModeMiro.addEventListener('change', updateNameModeVisibility);
       nameModeCustom.addEventListener('change', updateNameModeVisibility);
       nameModeStructured.addEventListener('change', updateNameModeVisibility);
@@ -587,14 +709,14 @@
           const boardInfo = await miro.board.getInfo();
           const boardId = boardInfo.id;
 
-          const selection = await miro.board.getSelection();
-          if (!selection.length) {
+          const selectedItems = await collectSelectedItems();
+          if (!selectedItems.length) {
             setStatus('No items selected on the board.', 'error');
             return;
           }
 
-          const images = selection.filter(item => item.type === 'image');
-          if (!images.length) {
+          const selectedImages = selectedItems.filter(item => item.type === 'image');
+          if (!selectedImages.length) {
             setStatus('Selection does not contain image items.', 'error');
             return;
           }
@@ -611,7 +733,21 @@
           const suffix = normalizeName(suffixRaw);
           const baseName = sanitizePart(baseNameRaw, 'image');
 
-          const total = images.length;
+          let structuredContext = null;
+          if (useStructuredNames) {
+            const namingItems = await collectNamingItems(selectedItems);
+            structuredContext = buildStructuredContext(namingItems, selectedImages);
+
+            console.log('[ImageDownloader] structured context', {
+              selectedItems: selectedItems.length,
+              namingItems: namingItems.length,
+              frames: structuredContext.frames.length,
+              stickies: structuredContext.stickies.length,
+              selectedImages: selectedImages.length
+            });
+          }
+
+          const total = selectedImages.length;
           setStatus(`Found ${total} images. Fetching data from REST API...`);
           setProgress(0, total);
 
@@ -619,7 +755,7 @@
           const errors = [];
 
           for (let i = 0; i < total; i++) {
-            const img = images[i];
+            const img = selectedImages[i];
             const prefixLabel = `(${i + 1}/${total}) [${img.id}]`;
 
             try {
@@ -648,7 +784,9 @@
               let finalName = '';
 
               if (useStructuredNames) {
-                const structured = buildStructuredNameData(selection, img, startIndex, i);
+                const structured = buildStructuredNameData(structuredContext, img, startIndex, i);
+                console.log('[ImageDownloader] structured naming', structured.debug);
+
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 parts.push(structured.base);
@@ -661,9 +799,10 @@
                 const title = (metaJson.title && metaJson.title.trim()) || '';
                 const urlBaseName = extractBaseNameFromUrl(downloadUrl) || extractBaseNameFromUrl(imageUrl);
                 const junkNames = ['original', 'image'];
-                let miroNameRaw = nameFromMetadata || title || urlBaseName || '';
-                let miroName = junkNames.includes(String(miroNameRaw).toLowerCase()) ? '' : sanitizePart(miroNameRaw, '');
+                const miroNameRaw = nameFromMetadata || title || urlBaseName || '';
+                const miroName = junkNames.includes(String(miroNameRaw).toLowerCase()) ? '' : sanitizePart(miroNameRaw, '');
                 const fallbackName = `${baseName}_${String(startIndex + i).padStart(3, '0')}`;
+
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 parts.push(miroName || fallbackName);
@@ -679,7 +818,7 @@
                 finalName = parts.filter(Boolean).join('_');
               }
 
-              const fileName = finalName + '.' + extFromType;
+              const fileName = `${finalName}.${extFromType}`;
               const a = document.createElement('a');
               a.href = blobUrl;
               a.download = fileName;
