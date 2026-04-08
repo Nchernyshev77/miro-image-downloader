@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=jrS5jNSqNDZKuvx5KtiJcT3DQ7BPwgdQIcWIvOzfr4EenPE_aaIR8-2-lss1yOw_1H74G4TKP2MrMRSOGug47iBS4bejzgmecYUDWCllX8rViNxOopVVzEHwuojpgpkh2bJ93-kF8N8JzIBBFQMMmgKcqSwlix5VRhaJXmlnMIfmD5bsnmu3P0TFaEG6aXwKbzhbMh-ruAOPLGtYsYpr7Oca8YxNW-o4PCv9lJ2zjZkiBmrPcpKvq1TwuSjiZD2CSQKf_BPQUfxf9AZYDMN1BA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDM0MjQ3MWY4YjVmOTJlODhmODlhNzNhMSZ0cz00OTMyMzgmcD1mcyZjaWQ9MSZzaWc9NWViNWM1Y2I1OGQ3ODA3Yjg1ZWQ2YzYzODE5MzU1MTNkZGY1MDRkNzlmZGY2OGY0NWNiNTFjNzA4ODU1Y2QzZSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root {
       --accent: #4262ff;
@@ -217,6 +217,7 @@
   </div>
 
   <script>
+    // Put your real token here
     const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_7gzbPBJBvHOGK3IsXTrdDA9FKGc';
 
     function htmlToText(value) {
@@ -248,8 +249,7 @@
         const path = u.pathname || '';
         const file = (path.split('/').pop() || '').trim();
         if (!file) return '';
-        const withoutExt = file.replace(/\.[^/.]+$/, '');
-        return decodeURIComponent(withoutExt);
+        return decodeURIComponent(file.replace(/\.[^/.]+$/, ''));
       } catch (e) {
         console.warn('Cannot parse filename from URL', url, e);
         return '';
@@ -290,7 +290,6 @@
         const txt = htmlToText(String(candidate));
         if (txt) return txt;
       }
-
       return '';
     }
 
@@ -320,41 +319,28 @@
 
     function rectContainsCenter(rect, item, pad = 0) {
       const r = getRect(item);
-      return pointInRect(
-        r.cx,
-        r.cy,
-        {
-          left: rect.left - pad,
-          right: rect.right + pad,
-          top: rect.top - pad,
-          bottom: rect.bottom + pad
-        }
-      );
-    }
-
-    function verticalOverlap(a, b) {
-      const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
-      const minH = Math.max(1, Math.min(a.height, b.height));
-      return overlap / minH;
+      return pointInRect(r.cx, r.cy, {
+        left: rect.left - pad,
+        right: rect.right + pad,
+        top: rect.top - pad,
+        bottom: rect.bottom + pad
+      });
     }
 
     function sortImagesForNumbering(images) {
       return [...images].sort((a, b) => {
         const ra = getRect(a);
         const rb = getRect(b);
-
         const rowThreshold = Math.max(10, Math.min(ra.height, rb.height) * 0.35);
-        if (Math.abs(ra.top - rb.top) > rowThreshold) {
-          return ra.top - rb.top;
-        }
+        if (Math.abs(ra.top - rb.top) > rowThreshold) return ra.top - rb.top;
         return ra.left - rb.left;
       });
     }
 
     function findMainColumnSticky(labels, frames) {
       const outside = labels.filter(label => {
-        const rect = getRect(label);
-        return !frames.some(frame => rectContainsCenter(getRect(frame), label, 10));
+        const r = getRect(label);
+        return !frames.some(frame => rectContainsCenter(getRect(frame), label, 6));
       });
 
       if (!outside.length) return null;
@@ -362,34 +348,29 @@
       return [...outside].sort((a, b) => {
         const ra = getRect(a);
         const rb = getRect(b);
-
-        if (Math.abs(ra.top - rb.top) > 1) return ra.top - rb.top;
-
-        const areaA = ra.width * ra.height;
-        const areaB = rb.width * rb.height;
-        return areaB - areaA;
+        if (Math.abs(ra.top - rb.top) > 2) return ra.top - rb.top;
+        return (rb.width * rb.height) - (ra.width * ra.height);
       })[0];
     }
 
     function findFrameLabelSticky(frame, labels) {
       const fr = getRect(frame);
-      const maxGap = Math.max(220, fr.width * 0.4);
+      const maxGap = Math.max(220, fr.width * 0.45);
 
       const candidates = labels
         .map(label => {
           const lr = getRect(label);
-          const txt = sanitizePart(getItemText(label), '');
-          if (!txt || txt === 'sd') return null;
+          const text = sanitizePart(getItemText(label), '');
+          if (!text || text === 'sd') return null;
 
-          const leftGap = fr.left - lr.right;
-          const isLeft = leftGap >= -20 && leftGap <= maxGap;
-
+          const gap = fr.left - lr.right;
+          const isLeft = gap >= -20 && gap <= maxGap;
           if (!isLeft) return null;
 
-          const overlap = verticalOverlap(fr, lr);
-          const verticalDistance = Math.abs(fr.cy - lr.cy);
-          const score = leftGap * 2 + verticalDistance - overlap * 100;
+          const centerInsideY = lr.cy >= fr.top - 20 && lr.cy <= fr.bottom + 20;
+          if (!centerInsideY) return null;
 
+          const score = Math.abs(gap) * 3 + Math.abs(lr.cy - fr.cy);
           return { label, score };
         })
         .filter(Boolean)
@@ -400,25 +381,21 @@
 
     function findInnerStickies(frame, labels) {
       const fr = getRect(frame);
-      const pad = Math.max(16, Math.min(fr.width, fr.height) * 0.02);
+      const leftBand = fr.left + fr.width * 0.26;
+      const pad = Math.max(8, fr.width * 0.01);
 
       return labels.filter(label => {
         const lr = getRect(label);
         const txt = sanitizePart(getItemText(label), '');
         if (!txt) return false;
 
-        const inside =
+        const insideFrame =
           lr.cx >= fr.left - pad &&
-          lr.cx <= fr.left + fr.width * 0.35 &&
+          lr.cx <= leftBand &&
           lr.cy >= fr.top - pad &&
           lr.cy <= fr.bottom + pad;
 
-        if (!inside) return false;
-
-        const reasonableWidth = lr.width <= fr.width * 0.35;
-        const reasonableHeight = lr.height <= fr.height * 0.22;
-
-        return reasonableWidth && reasonableHeight;
+        return insideFrame;
       });
     }
 
@@ -435,12 +412,17 @@
         const next = sorted[index + 1];
         const nextRect = next ? getRect(next) : null;
 
-        const top = Math.max(fr.top, sr.top - sr.height * 0.08);
-        let bottom = nextRect
-          ? nextRect.top - Math.max(nextRect.height * 0.12, 10)
-          : fr.bottom;
+        const top = Math.max(fr.top, sr.top);
+        let bottom = fr.bottom;
 
-        if (bottom < top + 10) {
+        if (nextRect) {
+          bottom = Math.min(
+            fr.bottom,
+            nextRect.top - Math.max(nextRect.height * 0.12, 8)
+          );
+        }
+
+        if (bottom < top + 6) {
           bottom = nextRect ? (sr.bottom + nextRect.top) / 2 : fr.bottom;
         }
 
@@ -448,10 +430,10 @@
           sticky,
           stickyRect: sr,
           zone: {
-            left: Math.max(fr.left, sr.right - 4),
+            left: Math.max(fr.left, sr.right),
             right: fr.right,
             top,
-            bottom: Math.min(bottom, fr.bottom)
+            bottom
           }
         };
       });
@@ -460,21 +442,21 @@
     function assignImageToZone(image, zones) {
       const ir = getRect(image);
 
-      for (const z of zones) {
-        if (pointInRect(ir.cx, ir.cy, z.zone)) {
-          return z;
+      for (const zone of zones) {
+        if (pointInRect(ir.cx, ir.cy, zone.zone)) {
+          return zone;
         }
       }
 
-      const possible = zones
-        .filter(z => ir.cx >= z.stickyRect.right - 15)
-        .map(z => ({
-          zone: z,
-          distance: Math.abs(ir.cy - z.stickyRect.cy) * 2 + Math.max(0, z.stickyRect.right - ir.cx) * 3
+      const fallback = zones
+        .filter(zone => ir.cx >= zone.stickyRect.right - 10)
+        .map(zone => ({
+          zone,
+          distance: Math.abs(ir.cy - zone.stickyRect.cy)
         }))
         .sort((a, b) => a.distance - b.distance);
 
-      return possible.length ? possible[0].zone : null;
+      return fallback.length ? fallback[0].zone : null;
     }
 
     function imageHasSd(image, sdStickies) {
@@ -512,9 +494,7 @@
 
       const metaJson = await metaResp.json();
       const imageUrl = metaJson?.data?.imageUrl;
-      if (!imageUrl) {
-        throw new Error('no imageUrl in data');
-      }
+      if (!imageUrl) throw new Error('no imageUrl in data');
 
       const urlObj = new URL(imageUrl);
       urlObj.searchParams.set('format', 'original');
@@ -534,9 +514,7 @@
 
       const resourceJson = await resourceResp.json();
       const downloadUrl = resourceJson.url;
-      if (!downloadUrl) {
-        throw new Error('no url in resource response');
-      }
+      if (!downloadUrl) throw new Error('no url in resource response');
 
       return { metaJson, imageUrl, downloadUrl };
     }
@@ -549,20 +527,20 @@
       const mainSticky = findMainColumnSticky(labels, frames);
       const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
 
-      const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 4));
+      const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 2));
       if (!targetFrame) {
         return {
           base: `${mainName}_frame_item`,
-          number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
+          number: String(startIndex + indexWithinGroup).padStart(3, '0'),
           hasSd: false
         };
       }
 
       const frameRect = getRect(targetFrame);
 
-      const outsideLabels = labels.filter(label => !rectContainsCenter(frameRect, label, 8));
-      const frameLabelSticky = findFrameLabelSticky(targetFrame, outsideLabels);
-      const frameName = sanitizePart(frameLabelSticky ? getItemText(frameLabelSticky) : '', 'frame');
+      const outsideLabels = labels.filter(label => !rectContainsCenter(frameRect, label, 6));
+      const frameLabel = findFrameLabelSticky(targetFrame, outsideLabels);
+      const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
 
       const innerLabels = findInnerStickies(targetFrame, labels);
       const sdStickies = innerLabels.filter(isSdSticky);
@@ -574,28 +552,27 @@
       if (!typeStickies.length) {
         return {
           base: `${mainName}_${frameName}_item`,
-          number: (startIndex + indexWithinGroup).toString().padStart(3, '0'),
+          number: String(startIndex + indexWithinGroup).padStart(3, '0'),
           hasSd: imageHasSd(image, sdStickies)
         };
       }
 
       const zones = buildTypeZones(targetFrame, typeStickies);
       const zone = assignImageToZone(image, zones);
-
       const innerName = sanitizePart(zone ? getItemText(zone.sticky) : '', 'item');
       const hasSd = imageHasSd(image, sdStickies);
 
-      let imagesForThisZone = images.filter(img => rectContainsCenter(frameRect, img, 2));
+      let imagesForZone = images.filter(img => rectContainsCenter(frameRect, img, 2));
       if (zone) {
-        imagesForThisZone = imagesForThisZone.filter(img => {
+        imagesForZone = imagesForZone.filter(img => {
           const assigned = assignImageToZone(img, zones);
           return assigned && assigned.sticky.id === zone.sticky.id;
         });
       }
 
-      const sortedGroup = sortImagesForNumbering(imagesForThisZone);
-      const actualIndex = Math.max(0, sortedGroup.findIndex(img => img.id === image.id));
-      const number = (startIndex + actualIndex).toString().padStart(3, '0');
+      const sorted = sortImagesForNumbering(imagesForZone);
+      const actualIndex = Math.max(0, sorted.findIndex(img => img.id === image.id));
+      const number = String(startIndex + actualIndex).padStart(3, '0');
 
       return {
         base: `${mainName}_${frameName}_${innerName}`,
@@ -622,11 +599,7 @@
       const progressLabel = document.getElementById('progressLabel');
 
       function updateNameModeVisibility() {
-        if (nameModeCustom.checked) {
-          baseNameRow.style.display = 'flex';
-        } else {
-          baseNameRow.style.display = 'none';
-        }
+        baseNameRow.style.display = nameModeCustom.checked ? 'flex' : 'none';
       }
 
       nameModeMiro.addEventListener('change', updateNameModeVisibility);
@@ -656,7 +629,7 @@
       }
 
       async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN) {
+        if (!ACCESS_TOKEN || ACCESS_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
           setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
           resetProgress();
           return;
@@ -734,13 +707,11 @@
               if (useStructuredNames) {
                 const structured = buildStructuredNameData(selection, img, startIndex, i);
                 const parts = [];
-
                 if (prefix) parts.push(prefix);
                 parts.push(structured.base);
                 if (suffix) parts.push(suffix);
                 if (structured.hasSd) parts.push('sd');
                 parts.push(structured.number);
-
                 finalName = parts.filter(Boolean).join('_');
               } else if (useMiroNames) {
                 const nameFromMetadata = extractNameFromMetadata(metaJson.metadata || {});
@@ -750,27 +721,25 @@
                   extractBaseNameFromUrl(imageUrl);
 
                 const junkNames = ['original', 'image'];
-                let miroNameRaw = nameFromMetadata || title || urlBaseName || '';
-                let miroName = junkNames.includes(String(miroNameRaw).toLowerCase())
+                const miroNameRaw = nameFromMetadata || title || urlBaseName || '';
+                const miroName = junkNames.includes(String(miroNameRaw).toLowerCase())
                   ? ''
                   : sanitizePart(miroNameRaw, '');
 
-                const fallbackName = `${baseName}_${(startIndex + i).toString().padStart(3, '0')}`;
+                const fallbackName = `${baseName}_${String(startIndex + i).padStart(3, '0')}`;
 
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 parts.push(miroName || fallbackName);
                 if (suffix) parts.push(suffix);
-
                 finalName = parts.filter(Boolean).join('_');
               } else {
-                const num = (startIndex + i).toString().padStart(3, '0');
+                const num = String(startIndex + i).padStart(3, '0');
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 parts.push(baseName);
                 if (suffix) parts.push(suffix);
                 parts.push(num);
-
                 finalName = parts.filter(Boolean).join('_');
               }
 
@@ -816,10 +785,8 @@
 
       setStatus('Select images on the board and click Download.');
       resetProgress();
-      console.log('[ImageDownloader] panel loaded');
 
       btn.addEventListener('click', () => {
-        console.log('[ImageDownloader] button clicked');
         downloadSelectedImages();
       });
     });
