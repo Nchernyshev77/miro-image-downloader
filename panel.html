@@ -3,16 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=jrS5jNSqNDZKuvx5KtiJcT3DQ7BPwgdQIcWIvOzfr4EenPE_aaIR8-2-lss1yOw_1H74G4TKP2MrMRSOGug47iBS4bejzgmecYUDWCllX8rViNxOopVVzEHwuojpgpkh2bJ93-kF8N8JzIBBFQMMmgKcqSwlix5VRhaJXmlnMIfmD5bsnmu3P0TFaEG6aXwKbzhbMh-ruAOPLGtYsYpr7Oca8YxNW-o4PCv9lJ2zjZkiBmrPcpKvq1TwuSjiZD2CSQKf_BPQUfxf9AZYDMN1BA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDM0MjQ3MWY4YjVmOTJlODhmODlhNzNhMSZ0cz00OTMyMzgmcD1mcyZjaWQ9MSZzaWc9NWViNWM1Y2I1OGQ3ODA3Yjg1ZWQ2YzYzODE5MzU1MTNkZGY1MDRkNzlmZGY2OGY0NWNiNTFjNzA4ODU1Y2QzZSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=LMSkinX1pIdrO69ejU3bjawKD7Z189ygLdpEy8_VUW3QLrMZSmWT7JET_rHNSfvnDA549p8DIXhce5Q-z2pxBIDZvksH6_U5H6MzPNWk7R3Gk1y2RUbKC-15DORO_JGEl6j65z547TeruukF0_E61k1Q_0aCANYvTBxcqfPqxo7o46D8bA15tRSOR33zFB7K5UzwtjufupcnZmvniHxMEelDNslzIwe0hu2Ky8v1buUE9GHbhwhFg8E5bf34ZV50qgjCZCZzvAp5oYa-mzCBSg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMGRlODA3MWY2YWIzZWRjMjNjZWM4NmQxNCZ0cz00OTMyMzgmcD1mcyZjaWQ9MSZzaWc9NjY1YWEzZGQ2ZTE1MjIwMWYxZjg3MjNjNjZkYzg4YWNmYzFhNGNhYzhmYjE4MTNlNjRlMjYwOTRmNDZjOWY4MCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
-    :root {
-      --accent: #4262ff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    :root { --accent: #4262ff; }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 20px 18px;
@@ -21,173 +15,51 @@
       color: #111827;
       font-size: 13px;
     }
-
-    .card {
-      border: none;
-      box-shadow: none;
-      padding: 0;
-      background: transparent;
-    }
-
-    .section {
-      padding: 10px 0 4px;
-      margin-bottom: 12px;
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #111827;
-      margin-bottom: 8px;
-    }
-
-    .field-row {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 10px;
-    }
-
-    label {
-      font-size: 12px;
-      color: #4b5563;
-    }
-
+    .card { border: none; box-shadow: none; padding: 0; background: transparent; }
+    .section { padding: 10px 0 4px; margin-bottom: 12px; }
+    .section-title { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 8px; }
+    .field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    label { font-size: 12px; color: #4b5563; }
     input[type="text"] {
-      width: 100%;
-      font-size: 13px;
-      padding: 7px 9px;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      outline: none;
-      background: #fff;
+      width: 100%; font-size: 13px; padding: 7px 9px; border-radius: 8px;
+      border: 1px solid #d1d5db; outline: none; background: #fff;
     }
-
-    input[type="text"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(66, 98, 255, 0.15);
-    }
-
-    .choice-row {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-
-    .choice {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #4b5563;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .choice input {
-      margin: 0;
-    }
-
-    .actions {
-      margin-top: 14px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
+    input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(66, 98, 255, 0.15); }
+    .choice-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .choice { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4b5563; cursor: pointer; user-select: none; }
+    .choice input { margin: 0; }
+    .actions { margin-top: 14px; display: flex; justify-content: center; align-items: center; }
     button {
-      padding: 11px 24px;
-      font-size: 14px;
-      font-weight: 500;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      background: var(--accent);
-      color: #fff;
-      min-width: 140px;
+      padding: 11px 24px; font-size: 14px; font-weight: 500; border-radius: 999px;
+      border: none; cursor: pointer; background: var(--accent); color: #fff; min-width: 140px;
     }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    .progress-container {
-      margin-top: 12px;
-    }
-
-    .progress-bar-bg {
-      width: 100%;
-      height: 6px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      border-radius: 999px;
-      transition: width 0.2s ease-out;
-    }
-
-    .progress-label {
-      margin-top: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      text-align: center;
-      color: #111827;
-    }
-
-    #status {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #4b5563;
-      white-space: pre-line;
-      text-align: center;
-    }
-
-    .status-ok {
-      color: #15803d;
-    }
-
-    .status-error {
-      color: #b91c1c;
-    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .progress-container { margin-top: 12px; }
+    .progress-bar-bg { width: 100%; height: 6px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width 0.2s ease-out; }
+    .progress-label { margin-top: 6px; font-size: 14px; font-weight: 600; text-align: center; color: #111827; }
+    #status { margin-top: 10px; font-size: 12px; color: #4b5563; white-space: pre-line; text-align: center; }
+    .status-ok { color: #15803d; }
+    .status-error { color: #b91c1c; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="section">
       <div class="section-title">File naming</div>
-
       <div class="choice-row">
-        <label class="choice">
-          <input type="radio" name="nameMode" id="nameModeMiro" value="miro" checked />
-          <span>Use Miro object name</span>
-        </label>
-        <label class="choice">
-          <input type="radio" name="nameMode" id="nameModeCustom" value="custom" />
-          <span>Use custom name</span>
-        </label>
-        <label class="choice">
-          <input type="radio" name="nameMode" id="nameModeStructured" value="structured" />
-          <span>Use board structure naming</span>
-        </label>
+        <label class="choice"><input type="radio" name="nameMode" id="nameModeMiro" value="miro" checked /><span>Use Miro object name</span></label>
+        <label class="choice"><input type="radio" name="nameMode" id="nameModeCustom" value="custom" /><span>Use custom name</span></label>
+        <label class="choice"><input type="radio" name="nameMode" id="nameModeStructured" value="structured" /><span>Use board structure naming</span></label>
       </div>
-
       <div class="field-row" id="baseNameRow" style="display:none;">
         <label for="baseName">Name</label>
         <input type="text" id="baseName" placeholder="Image name" />
       </div>
-
       <div class="field-row">
         <label for="prefixInput">Prefix</label>
         <input type="text" id="prefixInput" placeholder="Prefix image name" />
       </div>
-
       <div class="field-row">
         <label for="suffixInput">Suffix</label>
         <input type="text" id="suffixInput" placeholder="Image name suffix" />
@@ -207,9 +79,7 @@
     </div>
 
     <div class="progress-container">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progressFill"></div>
-      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
       <div class="progress-label" id="progressLabel"></div>
     </div>
 
@@ -217,8 +87,7 @@
   </div>
 
   <script>
-    // Put your real token here
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_7gzbPBJBvHOGK3IsXTrdDA9FKGc';
+    const ACCESS_TOKEN = 'PASTE_YOUR_TOKEN_HERE';
 
     function htmlToText(value) {
       if (!value) return '';
@@ -246,12 +115,10 @@
     function extractBaseNameFromUrl(url) {
       try {
         const u = new URL(url);
-        const path = u.pathname || '';
-        const file = (path.split('/').pop() || '').trim();
+        const file = (u.pathname.split('/').pop() || '').trim();
         if (!file) return '';
         return decodeURIComponent(file.replace(/\.[^/.]+$/, ''));
       } catch (e) {
-        console.warn('Cannot parse filename from URL', url, e);
         return '';
       }
     }
@@ -261,14 +128,7 @@
       for (const key of Object.keys(metadata)) {
         const ns = metadata[key];
         if (!ns || typeof ns !== 'object') continue;
-        const candidate = (
-          ns.fileName ||
-          ns.filename ||
-          ns.imageName ||
-          ns.name ||
-          ns.title ||
-          ''
-        ).trim();
+        const candidate = (ns.fileName || ns.filename || ns.imageName || ns.name || ns.title || '').trim();
         if (candidate) return candidate;
       }
       return '';
@@ -284,7 +144,6 @@
         item.data && item.data.text,
         item.data && item.data.title
       ];
-
       for (const candidate of candidates) {
         if (!candidate) continue;
         const txt = htmlToText(String(candidate));
@@ -298,18 +157,13 @@
       const y = item.y ?? (item.position && item.position.y) ?? 0;
       const width = item.width ?? (item.geometry && item.geometry.width) ?? 0;
       const height = item.height ?? (item.geometry && item.geometry.height) ?? 0;
-
       return {
-        x,
-        y,
-        width,
-        height,
+        x, y, width, height,
         left: x - width / 2,
         right: x + width / 2,
         top: y - height / 2,
         bottom: y + height / 2,
-        cx: x,
-        cy: y
+        cx: x, cy: y
       };
     }
 
@@ -327,6 +181,12 @@
       });
     }
 
+    function verticalOverlap(a, b) {
+      const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const minH = Math.max(1, Math.min(a.height, b.height));
+      return overlap / minH;
+    }
+
     function sortImagesForNumbering(images) {
       return [...images].sort((a, b) => {
         const ra = getRect(a);
@@ -337,65 +197,54 @@
       });
     }
 
+    function isSelectedTextLike(item) {
+      return item.type === 'sticky_note';
+    }
+
     function findMainColumnSticky(labels, frames) {
-      const outside = labels.filter(label => {
-        const r = getRect(label);
-        return !frames.some(frame => rectContainsCenter(getRect(frame), label, 6));
-      });
-
+      const outside = labels.filter(label => !frames.some(frame => rectContainsCenter(getRect(frame), label, 10)));
       if (!outside.length) return null;
-
       return [...outside].sort((a, b) => {
         const ra = getRect(a);
         const rb = getRect(b);
-        if (Math.abs(ra.top - rb.top) > 2) return ra.top - rb.top;
+        if (Math.abs(ra.top - rb.top) > 1) return ra.top - rb.top;
         return (rb.width * rb.height) - (ra.width * ra.height);
       })[0];
     }
 
     function findFrameLabelSticky(frame, labels) {
       const fr = getRect(frame);
-      const maxGap = Math.max(220, fr.width * 0.45);
-
+      const maxGap = Math.max(260, fr.width * 0.55);
       const candidates = labels
         .map(label => {
           const lr = getRect(label);
-          const text = sanitizePart(getItemText(label), '');
-          if (!text || text === 'sd') return null;
-
+          const txt = sanitizePart(getItemText(label), '');
+          if (!txt || txt === 'sd') return null;
           const gap = fr.left - lr.right;
-          const isLeft = gap >= -20 && gap <= maxGap;
-          if (!isLeft) return null;
-
-          const centerInsideY = lr.cy >= fr.top - 20 && lr.cy <= fr.bottom + 20;
-          if (!centerInsideY) return null;
-
-          const score = Math.abs(gap) * 3 + Math.abs(lr.cy - fr.cy);
+          if (gap < -20 || gap > maxGap) return null;
+          const vOverlap = verticalOverlap(fr, lr);
+          const verticalPenalty = Math.abs(fr.cy - lr.cy);
+          const score = gap * 2 + verticalPenalty - vOverlap * 120;
           return { label, score };
         })
         .filter(Boolean)
         .sort((a, b) => a.score - b.score);
-
       return candidates.length ? candidates[0].label : null;
     }
 
     function findInnerStickies(frame, labels) {
       const fr = getRect(frame);
-      const leftBand = fr.left + fr.width * 0.26;
-      const pad = Math.max(8, fr.width * 0.01);
-
+      const leftBand = fr.left + fr.width * 0.38;
+      const pad = Math.max(14, fr.height * 0.02);
       return labels.filter(label => {
         const lr = getRect(label);
         const txt = sanitizePart(getItemText(label), '');
         if (!txt) return false;
-
-        const insideFrame =
-          lr.cx >= fr.left - pad &&
-          lr.cx <= leftBand &&
-          lr.cy >= fr.top - pad &&
-          lr.cy <= fr.bottom + pad;
-
-        return insideFrame;
+        if (lr.cx < fr.left - pad || lr.cx > leftBand) return false;
+        if (lr.cy < fr.top - pad || lr.cy > fr.bottom + pad) return false;
+        if (lr.width > fr.width * 0.45) return false;
+        if (lr.height > fr.height * 0.30) return false;
+        return true;
       });
     }
 
@@ -406,55 +255,54 @@
     function buildTypeZones(frame, typeStickies) {
       const fr = getRect(frame);
       const sorted = [...typeStickies].sort((a, b) => getRect(a).top - getRect(b).top);
-
       return sorted.map((sticky, index) => {
         const sr = getRect(sticky);
-        const next = sorted[index + 1];
-        const nextRect = next ? getRect(next) : null;
-
-        const top = Math.max(fr.top, sr.top);
-        let bottom = fr.bottom;
-
-        if (nextRect) {
-          bottom = Math.min(
-            fr.bottom,
-            nextRect.top - Math.max(nextRect.height * 0.12, 8)
-          );
-        }
-
-        if (bottom < top + 6) {
-          bottom = nextRect ? (sr.bottom + nextRect.top) / 2 : fr.bottom;
-        }
-
+        const nextRect = sorted[index + 1] ? getRect(sorted[index + 1]) : null;
+        const top = Math.max(fr.top, sr.top - sr.height * 0.06);
+        let bottom = nextRect
+          ? nextRect.top - Math.max(nextRect.height * 0.12, 10)
+          : fr.bottom;
+        if (bottom < top + 10) bottom = nextRect ? (sr.bottom + nextRect.top) / 2 : fr.bottom;
         return {
           sticky,
           stickyRect: sr,
           zone: {
-            left: Math.max(fr.left, sr.right),
+            left: Math.max(fr.left, sr.right - 4),
             right: fr.right,
             top,
-            bottom
+            bottom: Math.min(bottom, fr.bottom)
           }
         };
       });
     }
 
-    function assignImageToZone(image, zones) {
+    function assignImageToZoneByNearestLeftLabel(image, zones) {
       const ir = getRect(image);
-
-      for (const zone of zones) {
-        if (pointInRect(ir.cx, ir.cy, zone.zone)) {
-          return zone;
-        }
-      }
+      const candidates = zones
+        .map(z => {
+          const sr = z.stickyRect;
+          const isRightOfLabel = ir.cx >= sr.right - 8;
+          const inFrameBandY = ir.cy >= z.zone.top && ir.cy <= z.zone.bottom;
+          if (!isRightOfLabel || !inFrameBandY) return null;
+          const horizontalDistance = Math.max(0, ir.left - sr.right);
+          const verticalDistance = Math.abs(ir.cy - sr.cy);
+          const score = verticalDistance * 2 + horizontalDistance * 0.15;
+          return { zone: z, score };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score);
+      if (candidates.length) return candidates[0].zone;
 
       const fallback = zones
-        .filter(zone => ir.cx >= zone.stickyRect.right - 10)
-        .map(zone => ({
-          zone,
-          distance: Math.abs(ir.cy - zone.stickyRect.cy)
-        }))
-        .sort((a, b) => a.distance - b.distance);
+        .map(z => {
+          const sr = z.stickyRect;
+          if (ir.cx < sr.right - 8) return null;
+          const verticalDistance = Math.abs(ir.cy - sr.cy);
+          const penalty = ir.cy > z.zone.bottom ? (ir.cy - z.zone.bottom) * 3 : 0;
+          return { zone: z, score: verticalDistance * 2 + penalty };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score);
 
       return fallback.length ? fallback[0].zone : null;
     }
@@ -462,14 +310,12 @@
     function imageHasSd(image, sdStickies) {
       const ir = getRect(image);
       const expand = Math.max(12, Math.min(ir.width, ir.height) * 0.18);
-
       const expanded = {
         left: ir.left - expand,
         right: ir.right + expand,
         top: ir.top - expand,
         bottom: ir.bottom + expand
       };
-
       return sdStickies.some(sd => {
         const sr = getRect(sd);
         return pointInRect(sr.cx, sr.cy, expanded);
@@ -477,21 +323,13 @@
     }
 
     async function getDownloadMeta(boardId, imageId) {
-      const metaResp = await fetch(
-        `https://api.miro.com/v2/boards/${boardId}/items/${imageId}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
-          },
-        },
-      );
-
+      const metaResp = await fetch(`https://api.miro.com/v2/boards/${boardId}/items/${imageId}`, {
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
+      });
       if (!metaResp.ok) {
         const txt = await metaResp.text();
         throw new Error(`meta error ${metaResp.status}: ${txt}`);
       }
-
       const metaJson = await metaResp.json();
       const imageUrl = metaJson?.data?.imageUrl;
       if (!imageUrl) throw new Error('no imageUrl in data');
@@ -501,44 +339,37 @@
       urlObj.searchParams.set('redirect', 'false');
 
       const resourceResp = await fetch(urlObj.toString(), {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + ACCESS_TOKEN.trim(),
-        },
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
       });
-
       if (!resourceResp.ok) {
         const txt = await resourceResp.text();
         throw new Error(`resource error ${resourceResp.status}: ${txt}`);
       }
-
       const resourceJson = await resourceResp.json();
       const downloadUrl = resourceJson.url;
       if (!downloadUrl) throw new Error('no url in resource response');
-
       return { metaJson, imageUrl, downloadUrl };
     }
 
-    function buildStructuredNameData(selection, image, startIndex, indexWithinGroup) {
+    function buildStructuredNameData(selection, image, startIndex, indexWithinSelection) {
       const frames = selection.filter(item => item.type === 'frame');
-      const labels = selection.filter(item => item.type === 'sticky_note');
+      const labels = selection.filter(isSelectedTextLike);
       const images = selection.filter(item => item.type === 'image');
 
       const mainSticky = findMainColumnSticky(labels, frames);
       const mainName = sanitizePart(mainSticky ? getItemText(mainSticky) : '', 'group');
 
-      const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 2));
+      const targetFrame = frames.find(frame => rectContainsCenter(getRect(frame), image, 4));
       if (!targetFrame) {
         return {
           base: `${mainName}_frame_item`,
-          number: String(startIndex + indexWithinGroup).padStart(3, '0'),
+          number: String(startIndex + indexWithinSelection).padStart(3, '0'),
           hasSd: false
         };
       }
 
-      const frameRect = getRect(targetFrame);
-
-      const outsideLabels = labels.filter(label => !rectContainsCenter(frameRect, label, 6));
+      const fr = getRect(targetFrame);
+      const outsideLabels = labels.filter(label => !rectContainsCenter(fr, label, 8));
       const frameLabel = findFrameLabelSticky(targetFrame, outsideLabels);
       const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
 
@@ -552,27 +383,25 @@
       if (!typeStickies.length) {
         return {
           base: `${mainName}_${frameName}_item`,
-          number: String(startIndex + indexWithinGroup).padStart(3, '0'),
+          number: String(startIndex + indexWithinSelection).padStart(3, '0'),
           hasSd: imageHasSd(image, sdStickies)
         };
       }
 
       const zones = buildTypeZones(targetFrame, typeStickies);
-      const zone = assignImageToZone(image, zones);
-      const innerName = sanitizePart(zone ? getItemText(zone.sticky) : '', 'item');
+      const assignedZone = assignImageToZoneByNearestLeftLabel(image, zones);
+      const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
       const hasSd = imageHasSd(image, sdStickies);
 
-      let imagesForZone = images.filter(img => rectContainsCenter(frameRect, img, 2));
-      if (zone) {
-        imagesForZone = imagesForZone.filter(img => {
-          const assigned = assignImageToZone(img, zones);
-          return assigned && assigned.sticky.id === zone.sticky.id;
-        });
-      }
+      const imagesInsideFrame = images.filter(img => rectContainsCenter(fr, img, 2));
+      const imagesForGroup = imagesInsideFrame.filter(img => {
+        const z = assignImageToZoneByNearestLeftLabel(img, zones);
+        return z && assignedZone && z.sticky.id === assignedZone.sticky.id;
+      });
 
-      const sorted = sortImagesForNumbering(imagesForZone);
-      const actualIndex = Math.max(0, sorted.findIndex(img => img.id === image.id));
-      const number = String(startIndex + actualIndex).padStart(3, '0');
+      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : imagesInsideFrame);
+      const idx = Math.max(0, sortedGroup.findIndex(img => img.id === image.id));
+      const number = String(startIndex + idx).padStart(3, '0');
 
       return {
         base: `${mainName}_${frameName}_${innerName}`,
@@ -584,24 +413,20 @@
     document.addEventListener('DOMContentLoaded', () => {
       const statusEl = document.getElementById('status');
       const btn = document.getElementById('downloadBtn');
-
       const nameModeMiro = document.getElementById('nameModeMiro');
       const nameModeCustom = document.getElementById('nameModeCustom');
       const nameModeStructured = document.getElementById('nameModeStructured');
-
       const baseNameRow = document.getElementById('baseNameRow');
       const baseNameInput = document.getElementById('baseName');
       const prefixInput = document.getElementById('prefixInput');
       const suffixInput = document.getElementById('suffixInput');
       const startIndexInput = document.getElementById('startIndex');
-
       const progressFill = document.getElementById('progressFill');
       const progressLabel = document.getElementById('progressLabel');
 
       function updateNameModeVisibility() {
         baseNameRow.style.display = nameModeCustom.checked ? 'flex' : 'none';
       }
-
       nameModeMiro.addEventListener('change', updateNameModeVisibility);
       nameModeCustom.addEventListener('change', updateNameModeVisibility);
       nameModeStructured.addEventListener('change', updateNameModeVisibility);
@@ -629,7 +454,7 @@
       }
 
       async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN || ACCESS_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
+        if (!ACCESS_TOKEN) {
           setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
           resetProgress();
           return;
@@ -680,7 +505,6 @@
 
             try {
               setStatus(`${prefixLabel} Preparing file...`);
-
               const { metaJson, imageUrl, downloadUrl } = await getDownloadMeta(boardId, img.id);
 
               const fileResp = await fetch(downloadUrl);
@@ -716,18 +540,11 @@
               } else if (useMiroNames) {
                 const nameFromMetadata = extractNameFromMetadata(metaJson.metadata || {});
                 const title = (metaJson.title && metaJson.title.trim()) || '';
-                const urlBaseName =
-                  extractBaseNameFromUrl(downloadUrl) ||
-                  extractBaseNameFromUrl(imageUrl);
-
+                const urlBaseName = extractBaseNameFromUrl(downloadUrl) || extractBaseNameFromUrl(imageUrl);
                 const junkNames = ['original', 'image'];
-                const miroNameRaw = nameFromMetadata || title || urlBaseName || '';
-                const miroName = junkNames.includes(String(miroNameRaw).toLowerCase())
-                  ? ''
-                  : sanitizePart(miroNameRaw, '');
-
+                let miroNameRaw = nameFromMetadata || title || urlBaseName || '';
+                let miroName = junkNames.includes(String(miroNameRaw).toLowerCase()) ? '' : sanitizePart(miroNameRaw, '');
                 const fallbackName = `${baseName}_${String(startIndex + i).padStart(3, '0')}`;
-
                 const parts = [];
                 if (prefix) parts.push(prefix);
                 parts.push(miroName || fallbackName);
@@ -744,7 +561,6 @@
               }
 
               const fileName = finalName + '.' + extFromType;
-
               const a = document.createElement('a');
               a.href = blobUrl;
               a.download = fileName;
@@ -752,7 +568,6 @@
               a.click();
               a.remove();
               URL.revokeObjectURL(blobUrl);
-
               downloaded.push(fileName);
             } catch (e) {
               console.error('Unexpected error for image', img.id, e);
@@ -764,15 +579,11 @@
 
           if (downloaded.length) {
             let msg = `Done. Downloaded ${downloaded.length} files.`;
-            if (errors.length) {
-              msg += '\nSome errors:\n' + errors.join('\n');
-            }
+            if (errors.length) msg += '\nSome errors:\n' + errors.join('\n');
             setStatus(msg, errors.length ? 'error' : 'ok');
           } else {
             let msg = 'Failed to download any images.';
-            if (errors.length) {
-              msg += '\nDetails:\n' + errors.join('\n');
-            }
+            if (errors.length) msg += '\nDetails:\n' + errors.join('\n');
             setStatus(msg, 'error');
           }
         } catch (err) {
@@ -785,8 +596,8 @@
 
       setStatus('Select images on the board and click Download.');
       resetProgress();
-
       btn.addEventListener('click', () => {
+        console.log('[ImageDownloader] button clicked');
         downloadSelectedImages();
       });
     });
