@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=fuKJA2LoljsnVx6aoJRYC0gWZhiDX6ZGEQQZyBgUjlgPX6YzLYw4djD_fWLshqa7zlZdPFa3lQdvCj_UJX48NXsXsZlYAu6chD5Xk-3zmBNPMW8Y4wMAQBLFtCT2GfWM9405k5Swh9s4V9iTqSE-r77f3nu3eqo9wY2FABszS1zFvn0aes28byRGbFcDorFLf7Xs7k-bu4Wat99263dz55VqKdpdIdUoBRrNZ41--CrnBa-QxBAHOHvkjBSivPgzjpclfGpd3YVdqdhBgVUnBA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDlkNzQ3MWY0ODhjYjYzMDU0MGI1ZDY1MSZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9NDM5YzYyZjI4M2ZhYzVjYjQ5NzEzYTA4YzU1NWZiNWFjYmYyMGI2ZGEwNmIwMTI2MGZlNTNiODg2MDcyNDM0OSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=axGdBUWtTazdMoCdmqOVUMWBgKn2-wPANkemf4kPbBXCRkZPOfF3DrV_6bUsvm8H4k-PiPW3xhec-SQ_-hBcrSlNK0kad-8AFiPJls55drZqOsorQgD1weGf9BapeCSeaFaIAul5f5b575EBIJmTzMf9pLzZZkjhJESyrUbVWgMwJq1BxXyjEteWFXH-Z2rFoFBcibX7RV2BKh29TzgMD5HDvIyUENOOwTJBQTJyBPblYg53GveRdTKQP7EDZTQ4zo4_PKdMjBDC_qlU1cMTLw" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDMxZTA3MWY0OTA2M2RiNTRkMWFlZjE3NCZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9YjdhYjFkZGVlYjdkNzAyNzk0ODRiZjU5YzA4MDc3ODVlZGQxY2RjMGY0NDUzNjZjMGQ5NTEzNDk5OTYyOWQzNyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -67,6 +67,17 @@
     </div>
 
     <div class="section">
+      <div class="section-title">Access token</div>
+      <div class="field-row">
+        <label for="tokenInput">Miro token</label>
+        <input type="password" id="tokenInput" placeholder="Paste your Miro token" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="choice-row">
+        <label class="choice"><input type="checkbox" id="showToken" /><span>Show token</span></label>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title">Numbering</div>
       <div class="field-row">
         <label for="startIndex">Start index</label>
@@ -87,7 +98,7 @@
   </div>
 
   <script>
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_Wa0UokV3L_N6VpShdPXm9Z1VbLM';
+    const TOKEN_STORAGE_KEY = 'miro-image-downloader-access-token';
 
     function htmlToText(value) {
       if (!value) return '';
@@ -546,14 +557,14 @@
       });
     }
 
-    async function getDownloadMeta(boardId, imageId) {
+    async function getDownloadMeta(boardId, imageId, accessToken) {
       const metaResp = await fetch(`https://api.miro.com/v2/boards/${boardId}/items/${imageId}`, {
-        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + accessToken.trim() }
       });
       if (!metaResp.ok) {
         const txt = await metaResp.text();
         if (metaResp.status === 401) {
-          throw new Error('401 unauthorized: insert your current working Miro token into ACCESS_TOKEN in panel.html');
+          throw new Error('401 unauthorized: paste your current working Miro token into the token field');
         }
         throw new Error(`meta error ${metaResp.status}: ${txt}`);
       }
@@ -567,12 +578,12 @@
       urlObj.searchParams.set('redirect', 'false');
 
       const resourceResp = await fetch(urlObj.toString(), {
-        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + ACCESS_TOKEN.trim() }
+        headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + accessToken.trim() }
       });
       if (!resourceResp.ok) {
         const txt = await resourceResp.text();
         if (resourceResp.status === 401) {
-          throw new Error('401 unauthorized: insert your current working Miro token into ACCESS_TOKEN in panel.html');
+          throw new Error('401 unauthorized: paste your current working Miro token into the token field');
         }
         throw new Error(`resource error ${resourceResp.status}: ${txt}`);
       }
@@ -795,9 +806,36 @@
       const baseNameInput = document.getElementById('baseName');
       const prefixInput = document.getElementById('prefixInput');
       const suffixInput = document.getElementById('suffixInput');
+      const tokenInput = document.getElementById('tokenInput');
+      const showToken = document.getElementById('showToken');
       const startIndexInput = document.getElementById('startIndex');
       const progressFill = document.getElementById('progressFill');
       const progressLabel = document.getElementById('progressLabel');
+
+      function loadStoredToken() {
+        try {
+          return localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+        } catch (error) {
+          return '';
+        }
+      }
+
+      function saveStoredToken(token) {
+        try {
+          const cleanToken = String(token || '').trim();
+          if (cleanToken) {
+            localStorage.setItem(TOKEN_STORAGE_KEY, cleanToken);
+          } else {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+          }
+        } catch (error) {
+          console.warn('[ImageDownloader] failed to persist token', error);
+        }
+      }
+
+      function getAccessToken() {
+        return String(tokenInput.value || '').trim();
+      }
 
       function updateNameModeVisibility() {
         baseNameRow.style.display = nameModeCustom.checked ? 'flex' : 'none';
@@ -807,6 +845,15 @@
       nameModeCustom.addEventListener('change', updateNameModeVisibility);
       nameModeStructured.addEventListener('change', updateNameModeVisibility);
       updateNameModeVisibility();
+
+      tokenInput.value = loadStoredToken();
+      tokenInput.addEventListener('input', () => {
+        saveStoredToken(tokenInput.value);
+      });
+
+      showToken.addEventListener('change', () => {
+        tokenInput.type = showToken.checked ? 'text' : 'password';
+      });
 
       function resetProgress() {
         progressFill.style.width = '0%';
@@ -830,16 +877,18 @@
       }
 
       async function downloadSelectedImages() {
-        if (!ACCESS_TOKEN || ACCESS_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
-          setStatus('ACCESS_TOKEN is empty. Put your token into panel.html.', 'error');
-          resetProgress();
-          return;
-        }
-
         btn.disabled = true;
         resetProgress();
 
         try {
+          const accessToken = getAccessToken();
+          if (!accessToken) {
+            setStatus('Paste your Miro token into the token field.', 'error');
+            resetProgress();
+            return;
+          }
+
+          saveStoredToken(accessToken);
           setStatus('Reading board info...');
           const boardInfo = await miro.board.getInfo();
           const boardId = boardInfo.id;
@@ -895,7 +944,7 @@
 
             try {
               setStatus(`${prefixLabel} Preparing file...`);
-              const { metaJson, imageUrl, downloadUrl } = await getDownloadMeta(boardId, img.id);
+              const { metaJson, imageUrl, downloadUrl } = await getDownloadMeta(boardId, img.id, accessToken);
 
               const fileResp = await fetch(downloadUrl);
               if (!fileResp.ok) {
@@ -987,7 +1036,7 @@
         }
       }
 
-      setStatus('Select images on the board and click Download.');
+      setStatus('Paste token, select images on the board and click Download.');
       resetProgress();
       console.log('[ImageDownloader] panel loaded');
       btn.addEventListener('click', () => {
