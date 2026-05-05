@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=CcMcnp8W1DnNgYOiRT-65Fx5CxTR3l5DYhaG0lw5v4EZ1y8wYDuFbFHwrrzl4gonGhLMVFfjbCbzniCzpgBpABucxp2m8Czrb4Je3uM8zVTLN5r50kSyplfM294dIZJddFAOE9VbtapWHa1OQ35Jws8gEUwppZTKG5p8R4mWU-tjgnq3JhnecTxpPVs1B6LC_csZat4N1R-atXnCjQUJ6NdDYO3m5VWmSIolBMWXWF2XMVWXlzXqtZUPi_zSvlzAMaOsiOYOEHwqgA8XHccD9g" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDdlMjg3MjQzOWJhOGIzODI3MzEwNWJhNyZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9NTkwZTQyY2VlYjllYjk2YTJiNTllYmI4Njg3ODI2MGVjN2RkY2NkMDZmNDRmNzAwMGM4ZjYxYWUyYmJjODFhNyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=dai35fqiyNLtKLVMPppQ6A4seYOqDQGDZNkZ7DqqoKt1bXZFmVNmZpSipBmrBs1Kpb_dwNSBybf_g9HksVQS_jz2aKDXrmhs-C8qN1tylYhnZbPznMPjXklBJtdfC_mTKjPktHl9zZvHTg_juKpcgqVGLd0AT7WO_Ysbm308YXA5jYyNYA3dQf2IhjHBsGxVz0yfAtHAdvJPJcTcyW-fIk00VZWhm-pTWYqmKXkYsab-yQJIcw8voxarGDH2VgLIoFxLWUl8syiUJhqt8cbSEQ" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDM1ZTA3MjBhODJjNzkzZjBmNjg1NzJlMyZ0cz00OTM4ODcmcD1mcyZjaWQ9MSZzaWc9ZGUwYjE0MDI5ZmE4ZjNiOGQwOTMxZWQ4ZjQxZDFmYTFhM2Y2YzM2M2YxNjQwZTE5Y2YzMjY1YjYzMTFkNDM4YiZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -445,6 +445,86 @@
       return candidates.length ? candidates[0].sticky : null;
     }
 
+
+    function getFrameLabelScore(frame, sticky, geometry) {
+      const fr = geometry.getRect(frame);
+      const sr = geometry.getRect(sticky);
+      const text = sanitizePart(getItemText(sticky), '');
+      const textKey = getTextKey(getItemText(sticky));
+
+      if (!text || textKey === 'sd') return null;
+      if (sticky.parentId === frame.id) return null;
+      if (pointInRect(sr.cx, sr.cy, expandRect(fr, 10))) return null;
+
+      const gap = fr.left - sr.right;
+      if (gap < -60 || gap > Math.max(620, fr.width * 1.35)) return null;
+
+      const overlapY = Math.max(0, Math.min(fr.bottom, sr.bottom) - Math.max(fr.top, sr.top));
+      const verticalPenalty = overlapY > 0 ? 0 : verticalDistanceToRect(sr.cy, fr);
+      if (verticalPenalty > Math.max(620, fr.height * 0.75)) return null;
+
+      return gap * 2 + verticalPenalty - overlapY * 0.15 - sr.area * 0.01;
+    }
+
+    function getColumnHeaderScore(frame, sticky, frames, geometry) {
+      const fr = geometry.getRect(frame);
+      const sr = geometry.getRect(sticky);
+      const text = sanitizePart(getItemText(sticky), '');
+      const textKey = getTextKey(getItemText(sticky));
+
+      if (!text || textKey === 'sd') return null;
+      if (sticky.parentId) return null;
+      if (pointInRect(sr.cx, sr.cy, expandRect(fr, 20))) return null;
+
+      const insideAnotherFrame = frames.some(otherFrame => {
+        if (otherFrame.id === frame.id) return false;
+        return pointInRect(sr.cx, sr.cy, expandRect(geometry.getRect(otherFrame), 20));
+      });
+      if (insideAnotherFrame) return null;
+
+      const gapTop = fr.top - sr.bottom;
+      if (gapTop < -60 || gapTop > Math.max(4000, fr.height * 12)) return null;
+
+      const overlap = horizontalOverlap(fr, sr);
+      const centerDx = Math.abs(sr.cx - fr.cx);
+      const horizontalPadding = Math.max(220, sr.width * 0.65, fr.width * 0.35);
+      const coversColumn = fr.cx >= sr.left - horizontalPadding && fr.cx <= sr.right + horizontalPadding;
+
+      if (!coversColumn && overlap < Math.max(24, fr.width * 0.06) && centerDx > Math.max(520, fr.width * 1.05)) {
+        return null;
+      }
+
+      return gapTop * 0.25 + centerDx * 0.9 - overlap * 0.25 - sr.area * 0.004;
+    }
+
+    function assignUniqueStickiesToFrames(frames, stickies, scoreFn) {
+      const scoredPairs = [];
+
+      for (const frame of frames) {
+        for (const sticky of stickies) {
+          const score = scoreFn(frame, sticky);
+          if (score == null || !Number.isFinite(score)) continue;
+          scoredPairs.push({ frameId: frame.id, stickyId: sticky.id, sticky, score });
+        }
+      }
+
+      scoredPairs.sort((a, b) => a.score - b.score);
+
+      const assignedFrames = new Set();
+      const assignedStickies = new Set();
+      const byFrameId = new Map();
+
+      for (const pair of scoredPairs) {
+        if (assignedFrames.has(pair.frameId)) continue;
+        if (assignedStickies.has(pair.stickyId)) continue;
+        assignedFrames.add(pair.frameId);
+        assignedStickies.add(pair.stickyId);
+        byFrameId.set(pair.frameId, pair.sticky);
+      }
+
+      return byFrameId;
+    }
+
     function isItemInsideFrame(item, frame, geometry, pad = 20) {
       const ir = geometry.getRect(item);
       const fr = geometry.getRect(frame);
@@ -621,6 +701,16 @@
       const frames = namingItems.filter(item => item.type === 'frame');
       const stickies = namingItems.filter(isSticky);
 
+      const selectedImagesByFrameId = new Map();
+      for (const image of selectedImages) {
+        const owner = pickContainingOrNearestFrame(image, frames, geometry);
+        if (!owner) continue;
+        if (!selectedImagesByFrameId.has(owner.id)) {
+          selectedImagesByFrameId.set(owner.id, []);
+        }
+        selectedImagesByFrameId.get(owner.id).push(image);
+      }
+
       const insideFrameById = new Map();
       for (const frame of frames) {
         const frameInside = stickies.filter(sticky => {
@@ -634,64 +724,55 @@
         return !frames.some(frame => insideFrameById.get(frame.id).some(candidate => candidate.id === sticky.id));
       });
 
+      const nonSdOutsideStickies = outsideStickies.filter(sticky => {
+        const text = sanitizePart(getItemText(sticky), '');
+        const textKey = getTextKey(getItemText(sticky));
+        return !!text && textKey !== 'sd';
+      });
+
+      const preassignedFrameLabels = assignUniqueStickiesToFrames(
+        frames,
+        nonSdOutsideStickies,
+        (frame, sticky) => getFrameLabelScore(frame, sticky, geometry)
+      );
+
+      const usedFrameLabelIds = new Set(Array.from(preassignedFrameLabels.values()).map(sticky => sticky.id));
+      const headerStickies = nonSdOutsideStickies.filter(sticky => !usedFrameLabelIds.has(sticky.id));
+
+      const preassignedColumnHeaders = new Map();
+      for (const frame of frames) {
+        const rankedHeaders = headerStickies
+          .map(sticky => ({
+            sticky,
+            score: getColumnHeaderScore(frame, sticky, frames, geometry)
+          }))
+          .filter(item => item.score != null && Number.isFinite(item.score))
+          .sort((a, b) => a.score - b.score);
+
+        if (rankedHeaders.length) {
+          preassignedColumnHeaders.set(frame.id, rankedHeaders[0].sticky);
+        }
+      }
+
       const frameContextsById = new Map();
 
       for (const frame of frames) {
         const insideStickies = insideFrameById.get(frame.id) || [];
-        const selectedImagesForFrame = selectedImages.filter(image => {
-          const owner = pickContainingOrNearestFrame(image, frames, geometry);
-          return owner && owner.id === frame.id;
-        });
+        const selectedImagesForFrame = selectedImagesByFrameId.get(frame.id) || [];
 
-        const columnCandidates = outsideStickies.filter(sticky => {
-          const text = sanitizePart(getItemText(sticky), '');
-          const textKey = getTextKey(getItemText(sticky));
-          if (!text || textKey === 'sd') return false;
-
-          const fr = geometry.getRect(frame);
-          const sr = geometry.getRect(sticky);
-          const gapTop = fr.top - sr.bottom;
-          if (gapTop < -40 || gapTop > Math.max(1400, fr.height * 2.6)) return false;
-
-          const overlapX = Math.min(fr.right, sr.right) - Math.max(fr.left, sr.left);
-          const centerDx = Math.abs(sr.cx - fr.cx);
-          return overlapX > -Math.max(160, fr.width * 0.25) || centerDx <= Math.max(420, fr.width * 0.95);
-        });
-
-        const columnSticky = findColumnHeaderStickyForFrame(
-          frame,
-          columnCandidates.length ? columnCandidates : outsideStickies,
-          frames,
-          geometry
-        );
+        let columnSticky = preassignedColumnHeaders.get(frame.id) || null;
+        if (!columnSticky) {
+          columnSticky = findColumnHeaderStickyForFrame(frame, headerStickies, frames, geometry);
+        }
 
         const excludedIds = new Set();
         if (columnSticky) excludedIds.add(columnSticky.id);
 
-        const frameLabelCandidates = outsideStickies.filter(sticky => {
-          if (excludedIds.has(sticky.id)) return false;
-
-          const text = sanitizePart(getItemText(sticky), '');
-          const textKey = getTextKey(getItemText(sticky));
-          if (!text || textKey === 'sd') return false;
-
-          const fr = geometry.getRect(frame);
-          const sr = geometry.getRect(sticky);
-          const gapLeft = fr.left - sr.right;
-          if (gapLeft < -40 || gapLeft > Math.max(520, fr.width * 1.25)) return false;
-
-          const verticalPenalty = verticalDistanceToRect(sr.cy, fr);
-          if (verticalPenalty > Math.max(560, fr.height * 0.65)) return false;
-
-          return true;
-        });
-
-        const frameLabel = findFrameLabelSticky(
-          frame,
-          frameLabelCandidates.length ? frameLabelCandidates : outsideStickies,
-          excludedIds,
-          geometry
-        );
+        let frameLabel = preassignedFrameLabels.get(frame.id) || null;
+        if (!frameLabel) {
+          const frameLabelCandidates = nonSdOutsideStickies.filter(sticky => !excludedIds.has(sticky.id));
+          frameLabel = findFrameLabelSticky(frame, frameLabelCandidates, excludedIds, geometry);
+        }
 
         if (frameLabel) excludedIds.add(frameLabel.id);
 
@@ -705,9 +786,9 @@
 
             const fr = geometry.getRect(frame);
             const sr = geometry.getRect(sticky);
-            if (sr.left > fr.left + fr.width * 0.72) return false;
-            if (sr.width > fr.width * 0.82) return false;
-            if (sr.height > fr.height * 0.34) return false;
+            if (sr.left > fr.left + fr.width * 0.78) return false;
+            if (sr.width > fr.width * 0.88) return false;
+            if (sr.height > fr.height * 0.38) return false;
             return true;
           })
           .sort((a, b) => {
