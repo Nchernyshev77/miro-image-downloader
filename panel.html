@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=scLTxbQlFaGIbOFGHp7qrLEaYinenEHxOF5T5kJIRJe0uzuXeyRTT8jSXP3BLsxK7B9fL3XrGYU3TRSWKbouaYrI2HcPgO-2kGWMIwtUW1PvzZJc8I9rwrKqr5KeZhVHq2Peic3uHa79eh2tkz7xfSsaHdJ14RwiHRACkqUkbegj9czHFiFgao1ejiBF--4l0FSVdoNj6SxmYaqiSNe0gpHY9QaFXJKdxeP8MVm2NzEVO-UjI7agGSX9rp4lS4tZE7pAs7jMoyqTSONTd2FVJg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDNlYmM3MWY0YmE0ODFjZDRmNmEyYTNhZiZ0cz00OTM4ODAmcD1mcyZjaWQ9MSZzaWc9MzNjZjQ5NzEwYmQ1ZmI4ZDQ3NGQ2YmM4NTQ4Mzc5NzJkZDJiNDliNzg3NDM5ZDQ4Nzk5MzMxNjQ5NTkzM2MxYyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -87,7 +87,7 @@
   </div>
 
   <script>
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_v9s-ZQG3y0AlSQCplpHrept_FD4';
+    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_2ANA6cAmKDhUc7TmDtLcdtdGjsI';
 
     function htmlToText(value) {
       if (!value) return '';
@@ -331,6 +331,26 @@
       }
 
       const itemRect = geometry.getRect(item);
+
+      const overlapMatches = frames
+        .map(frame => {
+          const fr = geometry.getRect(frame);
+          const overlap = rectOverlapArea(itemRect, fr);
+          const overlapRatio = overlap / Math.max(1, itemRect.area);
+          const centerInside = pointInRect(itemRect.cx, itemRect.cy, expandRect(fr, 20));
+          return { frame, overlap, overlapRatio, centerInside, frameArea: fr.area };
+        })
+        .filter(match => match.overlap > 0 || match.centerInside)
+        .sort((a, b) => {
+          if (Math.abs(b.overlapRatio - a.overlapRatio) > 0.0001) return b.overlapRatio - a.overlapRatio;
+          if (Math.abs(b.overlap - a.overlap) > 1) return b.overlap - a.overlap;
+          return a.frameArea - b.frameArea;
+        });
+
+      if (overlapMatches.length) {
+        return overlapMatches[0].frame;
+      }
+
       const containing = frames
         .filter(frame => pointInRect(itemRect.cx, itemRect.cy, expandRect(geometry.getRect(frame), 20)))
         .sort((a, b) => geometry.getRect(a).area - geometry.getRect(b).area);
@@ -560,16 +580,128 @@
 
     function buildStructuredContext(namingItems, selectedImages) {
       const geometry = createGeometry(namingItems);
+      const frames = namingItems.filter(item => item.type === 'frame');
+      const stickies = namingItems.filter(isSticky);
+
+      const insideFrameById = new Map();
+      for (const frame of frames) {
+        const frameInside = stickies.filter(sticky => {
+          if (sticky.parentId === frame.id) return true;
+          return isItemInsideFrame(sticky, frame, geometry, 25);
+        });
+        insideFrameById.set(frame.id, frameInside);
+      }
+
+      const outsideStickies = stickies.filter(sticky => {
+        return !frames.some(frame => insideFrameById.get(frame.id).some(candidate => candidate.id === sticky.id));
+      });
+
+      const frameContextsById = new Map();
+
+      for (const frame of frames) {
+        const insideStickies = insideFrameById.get(frame.id) || [];
+        const selectedImagesForFrame = selectedImages.filter(image => {
+          const owner = pickContainingOrNearestFrame(image, frames, geometry);
+          return owner && owner.id === frame.id;
+        });
+
+        const columnCandidates = outsideStickies.filter(sticky => {
+          const text = sanitizePart(getItemText(sticky), '');
+          if (!text || text === 'sd') return false;
+
+          const fr = geometry.getRect(frame);
+          const sr = geometry.getRect(sticky);
+          const gapTop = fr.top - sr.bottom;
+          if (gapTop < -40 || gapTop > Math.max(1400, fr.height * 2.6)) return false;
+
+          const overlapX = Math.min(fr.right, sr.right) - Math.max(fr.left, sr.left);
+          const centerDx = Math.abs(sr.cx - fr.cx);
+          return overlapX > -Math.max(160, fr.width * 0.25) || centerDx <= Math.max(420, fr.width * 0.95);
+        });
+
+        const columnSticky = findColumnHeaderStickyForFrame(
+          frame,
+          columnCandidates.length ? columnCandidates : outsideStickies,
+          frames,
+          geometry
+        );
+
+        const excludedIds = new Set();
+        if (columnSticky) excludedIds.add(columnSticky.id);
+
+        const frameLabelCandidates = outsideStickies.filter(sticky => {
+          if (excludedIds.has(sticky.id)) return false;
+
+          const text = sanitizePart(getItemText(sticky), '');
+          if (!text || text === 'sd') return false;
+
+          const fr = geometry.getRect(frame);
+          const sr = geometry.getRect(sticky);
+          const gapLeft = fr.left - sr.right;
+          if (gapLeft < -40 || gapLeft > Math.max(520, fr.width * 1.25)) return false;
+
+          const verticalPenalty = verticalDistanceToRect(sr.cy, fr);
+          if (verticalPenalty > Math.max(560, fr.height * 0.65)) return false;
+
+          return true;
+        });
+
+        const frameLabel = findFrameLabelSticky(
+          frame,
+          frameLabelCandidates.length ? frameLabelCandidates : outsideStickies,
+          excludedIds,
+          geometry
+        );
+
+        if (frameLabel) excludedIds.add(frameLabel.id);
+
+        const strictTypeStickies = findInnerTypeStickies(frame, insideStickies, excludedIds, geometry);
+        const relaxedTypeStickies = insideStickies
+          .filter(sticky => {
+            if (excludedIds.has(sticky.id)) return false;
+            const text = sanitizePart(getItemText(sticky), '');
+            if (!text || text === 'sd') return false;
+
+            const fr = geometry.getRect(frame);
+            const sr = geometry.getRect(sticky);
+            if (sr.left > fr.left + fr.width * 0.72) return false;
+            if (sr.width > fr.width * 0.82) return false;
+            if (sr.height > fr.height * 0.34) return false;
+            return true;
+          })
+          .sort((a, b) => {
+            const ra = geometry.getRect(a);
+            const rb = geometry.getRect(b);
+            if (Math.abs(ra.top - rb.top) > 8) return ra.top - rb.top;
+            return ra.left - rb.left;
+          });
+
+        const typeStickies = strictTypeStickies.length ? strictTypeStickies : relaxedTypeStickies;
+        const sdStickies = findSdStickies(frame, insideStickies, excludedIds, geometry);
+
+        frameContextsById.set(frame.id, {
+          frame,
+          columnSticky,
+          frameLabel,
+          insideStickies,
+          outsideStickies,
+          typeStickies,
+          sdStickies,
+          selectedImages: selectedImagesForFrame
+        });
+      }
+
       return {
         geometry,
-        frames: namingItems.filter(item => item.type === 'frame'),
-        stickies: namingItems.filter(isSticky),
-        selectedImages
+        frames,
+        stickies,
+        selectedImages,
+        frameContextsById
       };
     }
 
     function buildStructuredNameData(context, image, startIndex, indexWithinSelection) {
-      const { geometry, frames, stickies, selectedImages } = context;
+      const { geometry, frames, selectedImages, frameContextsById } = context;
 
       const targetFrame = pickContainingOrNearestFrame(image, frames, geometry);
       if (!targetFrame) {
@@ -584,22 +716,18 @@
         };
       }
 
-      const columnSticky = findColumnHeaderStickyForFrame(targetFrame, stickies, frames, geometry);
+      const frameContext = frameContextsById.get(targetFrame.id) || null;
+      const columnSticky = frameContext ? frameContext.columnSticky : null;
+      const frameLabel = frameContext ? frameContext.frameLabel : null;
+      const typeStickies = frameContext ? frameContext.typeStickies : [];
+      const sdStickies = frameContext ? frameContext.sdStickies : [];
+      const selectedImagesForFrame = frameContext ? frameContext.selectedImages : getImagesForFrame(targetFrame, selectedImages, geometry);
+
       const mainName = sanitizePart(columnSticky ? getItemText(columnSticky) : '', 'group');
-
-      const excludedIds = new Set();
-      if (columnSticky) excludedIds.add(columnSticky.id);
-
-      const frameLabel = findFrameLabelSticky(targetFrame, stickies, excludedIds, geometry);
       const frameName = sanitizePart(frameLabel ? getItemText(frameLabel) : '', 'frame');
-      if (frameLabel) excludedIds.add(frameLabel.id);
-
-      const typeStickies = findInnerTypeStickies(targetFrame, stickies, excludedIds, geometry);
-      const sdStickies = findSdStickies(targetFrame, stickies, excludedIds, geometry);
 
       if (!typeStickies.length) {
-        const frameImages = getImagesForFrame(targetFrame, selectedImages, geometry);
-        const sortedFallback = sortImagesForNumbering(frameImages.length ? frameImages : [image], geometry);
+        const sortedFallback = sortImagesForNumbering(selectedImagesForFrame.length ? selectedImagesForFrame : [image], geometry);
         const idxFallback = Math.max(0, sortedFallback.findIndex(img => img.id === image.id));
 
         return {
@@ -612,6 +740,7 @@
             frameId: targetFrame.id,
             columnStickyId: columnSticky ? columnSticky.id : null,
             frameLabelId: frameLabel ? frameLabel.id : null,
+            selectedImagesForFrame: selectedImagesForFrame.length,
             innerStickyCount: 0
           }
         };
@@ -622,15 +751,14 @@
       const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
       const hasSd = imageHasSd(image, sdStickies, geometry);
 
-      const imagesForFrame = getImagesForFrame(targetFrame, selectedImages, geometry);
       const imagesForGroup = assignedZone
-        ? imagesForFrame.filter(img => {
+        ? selectedImagesForFrame.filter(img => {
             const zone = assignImageToTypeByZone(img, zones, geometry);
             return zone && zone.sticky.id === assignedZone.sticky.id;
           })
-        : imagesForFrame;
+        : selectedImagesForFrame;
 
-      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : imagesForFrame, geometry);
+      const sortedGroup = sortImagesForNumbering(imagesForGroup.length ? imagesForGroup : selectedImagesForFrame, geometry);
       const idx = Math.max(0, sortedGroup.findIndex(img => img.id === image.id));
       const number = String(startIndex + idx).padStart(3, '0');
 
@@ -645,6 +773,7 @@
           columnStickyId: columnSticky ? columnSticky.id : null,
           frameLabelId: frameLabel ? frameLabel.id : null,
           innerStickyId: assignedZone ? assignedZone.sticky.id : null,
+          selectedImagesForFrame: selectedImagesForFrame.length,
           innerStickyCount: typeStickies.length
         }
       };
