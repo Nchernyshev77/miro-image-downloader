@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=dai35fqiyNLtKLVMPppQ6A4seYOqDQGDZNkZ7DqqoKt1bXZFmVNmZpSipBmrBs1Kpb_dwNSBybf_g9HksVQS_jz2aKDXrmhs-C8qN1tylYhnZbPznMPjXklBJtdfC_mTKjPktHl9zZvHTg_juKpcgqVGLd0AT7WO_Ysbm308YXA5jYyNYA3dQf2IhjHBsGxVz0yfAtHAdvJPJcTcyW-fIk00VZWhm-pTWYqmKXkYsab-yQJIcw8voxarGDH2VgLIoFxLWUl8syiUJhqt8cbSEQ" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDM1ZTA3MjBhODJjNzkzZjBmNjg1NzJlMyZ0cz00OTM4ODcmcD1mcyZjaWQ9MSZzaWc9ZGUwYjE0MDI5ZmE4ZjNiOGQwOTMxZWQ4ZjQxZDFmYTFhM2Y2YzM2M2YxNjQwZTE5Y2YzMjY1YjYzMTFkNDM4YiZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=2WAJCkEP2SM5cw-WTo6ExZxlsgITcLX3wGaLl7792mEX9lDDpb2_RX2Dc57qKmiUkLfwO2UXor-S1r43IdiwmS1duq22pCVK-wtbynyMfHKh2tSaEu1XornIl6mLfTu-7lwtIDFAmpUU_8NF8SsolBBhkO-BXMcGouFrAU_8Z4KQEBM-ouxLY60wYKCCXDpjfwflmH5tRBO-jyjNeUyGXkQa0APNfWVATeUXF7S6EawK8Vm0LRo-VL8IGRAy_t5MUpBKO662Y09vtppEnxfWlg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDE0NmM3MjQzOGY1OTZmMjMzYmQxYjE3NyZ0cz00OTM4ODgmcD1mcyZjaWQ9MSZzaWc9OWRiMjQ3YTZjOGU0ZGY3NDllZTQ1NTkzNGNlNDdkNzlkOTQyZTQ0ODdlMTU4OTZiMzQ3M2QzMDQxYjJlMzcxZCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -111,11 +111,11 @@
       return String(text || '')
         .trim()
         .replace(/<[^>]*>/g, '')
-        .replace(/\s*[\/\\]\s*/g, ',')
+        .replace(/\s*[\/\\]\s*/g, ', ')
         .replace(/[:*?"<>|]+/g, ' ')
-        .replace(/\s+/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_+|_+$/g, '');
+        .replace(/\s*,\s*/g, ', ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     function sanitizePart(text, fallback = 'item') {
@@ -124,7 +124,16 @@
     }
 
     function getTextKey(text) {
-      return sanitizePart(text, '').toLowerCase();
+      return normalizeName(text).toLowerCase();
+    }
+
+    function isDashOnlyName(text) {
+      const compact = String(text || '').replace(/\s+/g, '');
+      return /^(?:-|–|—)+$/.test(compact);
+    }
+
+    function buildStructuredBase(parts) {
+      return parts.filter(part => String(part || '').trim()).join('_');
     }
 
     function extractBaseNameFromUrl(url) {
@@ -853,7 +862,7 @@
         const idxFallback = Math.max(0, sortedFallback.findIndex(img => img.id === image.id));
 
         return {
-          base: `${mainName}_${frameName}_item`,
+          base: buildStructuredBase([mainName, frameName, 'item']),
           number: String(startIndex + idxFallback).padStart(3, '0'),
           hasSd: imageHasSd(image, sdStickies, geometry),
           debug: {
@@ -870,7 +879,10 @@
 
       const zones = buildTypeZonesForFrame(targetFrame, typeStickies, geometry);
       const assignedZone = assignImageToTypeByZone(image, zones, geometry);
-      const innerName = sanitizePart(assignedZone ? getItemText(assignedZone.sticky) : '', 'item');
+      const innerStickyText = assignedZone ? getItemText(assignedZone.sticky) : '';
+      const innerName = isDashOnlyName(innerStickyText)
+        ? ''
+        : sanitizePart(innerStickyText, 'item');
       const hasSd = imageHasSd(image, sdStickies, geometry);
 
       const imagesForGroup = assignedZone
@@ -885,7 +897,7 @@
       const number = String(startIndex + idx).padStart(3, '0');
 
       return {
-        base: `${mainName}_${frameName}_${innerName}`,
+        base: buildStructuredBase([mainName, frameName, innerName]),
         number,
         hasSd,
         debug: {
