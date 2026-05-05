@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=axGdBUWtTazdMoCdmqOVUMWBgKn2-wPANkemf4kPbBXCRkZPOfF3DrV_6bUsvm8H4k-PiPW3xhec-SQ_-hBcrSlNK0kad-8AFiPJls55drZqOsorQgD1weGf9BapeCSeaFaIAul5f5b575EBIJmTzMf9pLzZZkjhJESyrUbVWgMwJq1BxXyjEteWFXH-Z2rFoFBcibX7RV2BKh29TzgMD5HDvIyUENOOwTJBQTJyBPblYg53GveRdTKQP7EDZTQ4zo4_PKdMjBDC_qlU1cMTLw" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDMxZTA3MWY0OTA2M2RiNTRkMWFlZjE3NCZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9YjdhYjFkZGVlYjdkNzAyNzk0ODRiZjU5YzA4MDc3ODVlZGQxY2RjMGY0NDUzNjZjMGQ5NTEzNDk5OTYyOWQzNyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=CcMcnp8W1DnNgYOiRT-65Fx5CxTR3l5DYhaG0lw5v4EZ1y8wYDuFbFHwrrzl4gonGhLMVFfjbCbzniCzpgBpABucxp2m8Czrb4Je3uM8zVTLN5r50kSyplfM294dIZJddFAOE9VbtapWHa1OQ35Jws8gEUwppZTKG5p8R4mWU-tjgnq3JhnecTxpPVs1B6LC_csZat4N1R-atXnCjQUJ6NdDYO3m5VWmSIolBMWXWF2XMVWXlzXqtZUPi_zSvlzAMaOsiOYOEHwqgA8XHccD9g" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDdlMjg3MjQzOWJhOGIzODI3MzEwNWJhNyZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9NTkwZTQyY2VlYjllYjk2YTJiNTllYmI4Njg3ODI2MGVjN2RkY2NkMDZmNDRmNzAwMGM4ZjYxYWUyYmJjODFhNyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -110,9 +110,9 @@
     function normalizeName(text) {
       return String(text || '')
         .trim()
-        .toLowerCase()
         .replace(/<[^>]*>/g, '')
-        .replace(/[\/\\:*?"<>|]+/g, ' ')
+        .replace(/\s*[\/\\]\s*/g, ',')
+        .replace(/[:*?"<>|]+/g, ' ')
         .replace(/\s+/g, '_')
         .replace(/_+/g, '_')
         .replace(/^_+|_+$/g, '');
@@ -121,6 +121,10 @@
     function sanitizePart(text, fallback = 'item') {
       const n = normalizeName(text);
       return n || fallback;
+    }
+
+    function getTextKey(text) {
+      return sanitizePart(text, '').toLowerCase();
     }
 
     function extractBaseNameFromUrl(url) {
@@ -382,7 +386,8 @@
       const candidates = stickies
         .map(sticky => {
           const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return null;
+          const textKey = getTextKey(getItemText(sticky));
+          if (!text || textKey === 'sd') return null;
           if (sticky.parentId) return null;
 
           const sr = geometry.getRect(sticky);
@@ -417,7 +422,8 @@
         .filter(sticky => !excludedIds.has(sticky.id))
         .map(sticky => {
           const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return null;
+          const textKey = getTextKey(getItemText(sticky));
+          if (!text || textKey === 'sd') return null;
           if (sticky.parentId === frame.id) return null;
 
           const sr = geometry.getRect(sticky);
@@ -454,7 +460,8 @@
           if (excludedIds.has(sticky.id)) return false;
 
           const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return false;
+          const textKey = getTextKey(getItemText(sticky));
+          if (!text || textKey === 'sd') return false;
           if (!isItemInsideFrame(sticky, frame, geometry, 25)) return false;
 
           const sr = geometry.getRect(sticky);
@@ -476,10 +483,10 @@
       return allStickies.filter(sticky => {
         if (excludedIds.has(sticky.id)) return false;
 
-        const text = sanitizePart(getItemText(sticky), '');
-        if (text !== 'sd') return false;
+        const textKey = getTextKey(getItemText(sticky));
+        if (textKey !== 'sd') return false;
 
-        return isItemInsideFrame(sticky, frame, geometry, 30);
+        return isItemInsideFrame(sticky, frame, geometry, 80);
       });
     }
 
@@ -549,11 +556,25 @@
 
     function imageHasSd(image, sdStickies, geometry) {
       const ir = geometry.getRect(image);
-      const expandedImage = expandRect(ir, 14);
+      const expandedImage = expandRect(
+        ir,
+        Math.max(18, ir.width * 0.04),
+        Math.max(18, ir.height * 0.04)
+      );
 
       return sdStickies.some(sd => {
         const sr = geometry.getRect(sd);
-        return pointInRect(sr.cx, sr.cy, expandedImage);
+        const expandedSd = expandRect(
+          sr,
+          Math.max(10, sr.width * 0.18),
+          Math.max(10, sr.height * 0.18)
+        );
+
+        return (
+          pointInRect(sr.cx, sr.cy, expandedImage) ||
+          pointInRect(ir.cx, ir.cy, expandedSd) ||
+          rectOverlapArea(expandedImage, expandedSd) > 0
+        );
       });
     }
 
@@ -624,7 +645,8 @@
 
         const columnCandidates = outsideStickies.filter(sticky => {
           const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return false;
+          const textKey = getTextKey(getItemText(sticky));
+          if (!text || textKey === 'sd') return false;
 
           const fr = geometry.getRect(frame);
           const sr = geometry.getRect(sticky);
@@ -650,7 +672,8 @@
           if (excludedIds.has(sticky.id)) return false;
 
           const text = sanitizePart(getItemText(sticky), '');
-          if (!text || text === 'sd') return false;
+          const textKey = getTextKey(getItemText(sticky));
+          if (!text || textKey === 'sd') return false;
 
           const fr = geometry.getRect(frame);
           const sr = geometry.getRect(sticky);
@@ -677,7 +700,8 @@
           .filter(sticky => {
             if (excludedIds.has(sticky.id)) return false;
             const text = sanitizePart(getItemText(sticky), '');
-            if (!text || text === 'sd') return false;
+            const textKey = getTextKey(getItemText(sticky));
+            if (!text || textKey === 'sd') return false;
 
             const fr = geometry.getRect(frame);
             const sr = geometry.getRect(sticky);
