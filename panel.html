@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=scLTxbQlFaGIbOFGHp7qrLEaYinenEHxOF5T5kJIRJe0uzuXeyRTT8jSXP3BLsxK7B9fL3XrGYU3TRSWKbouaYrI2HcPgO-2kGWMIwtUW1PvzZJc8I9rwrKqr5KeZhVHq2Peic3uHa79eh2tkz7xfSsaHdJ14RwiHRACkqUkbegj9czHFiFgao1ejiBF--4l0FSVdoNj6SxmYaqiSNe0gpHY9QaFXJKdxeP8MVm2NzEVO-UjI7agGSX9rp4lS4tZE7pAs7jMoyqTSONTd2FVJg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDNlYmM3MWY0YmE0ODFjZDRmNmEyYTNhZiZ0cz00OTM4ODAmcD1mcyZjaWQ9MSZzaWc9MzNjZjQ5NzEwYmQ1ZmI4ZDQ3NGQ2YmM4NTQ4Mzc5NzJkZDJiNDliNzg3NDM5ZDQ4Nzk5MzMxNjQ5NTkzM2MxYyZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=fuKJA2LoljsnVx6aoJRYC0gWZhiDX6ZGEQQZyBgUjlgPX6YzLYw4djD_fWLshqa7zlZdPFa3lQdvCj_UJX48NXsXsZlYAu6chD5Xk-3zmBNPMW8Y4wMAQBLFtCT2GfWM9405k5Swh9s4V9iTqSE-r77f3nu3eqo9wY2FABszS1zFvn0aes28byRGbFcDorFLf7Xs7k-bu4Wat99263dz55VqKdpdIdUoBRrNZ41--CrnBa-QxBAHOHvkjBSivPgzjpclfGpd3YVdqdhBgVUnBA" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDlkNzQ3MWY0ODhjYjYzMDU0MGI1ZDY1MSZ0cz00OTM4ODYmcD1mcyZjaWQ9MSZzaWc9NDM5YzYyZjI4M2ZhYzVjYjQ5NzEzYTA4YzU1NWZiNWFjYmYyMGI2ZGEwNmIwMTI2MGZlNTNiODg2MDcyNDM0OSZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -87,7 +87,7 @@
   </div>
 
   <script>
-    const ACCESS_TOKEN = 'eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_20F_5AdZX1FOojDN10KkX6sTNvQ';
+    const ACCESS_TOKEN = 'PASTE_YOUR_CURRENT_WORKING_TOKEN_HERE';
 
     function htmlToText(value) {
       if (!value) return '';
@@ -552,6 +552,9 @@
       });
       if (!metaResp.ok) {
         const txt = await metaResp.text();
+        if (metaResp.status === 401) {
+          throw new Error('401 unauthorized: insert your current working Miro token into ACCESS_TOKEN in panel.html');
+        }
         throw new Error(`meta error ${metaResp.status}: ${txt}`);
       }
 
@@ -568,6 +571,9 @@
       });
       if (!resourceResp.ok) {
         const txt = await resourceResp.text();
+        if (resourceResp.status === 401) {
+          throw new Error('401 unauthorized: insert your current working Miro token into ACCESS_TOKEN in panel.html');
+        }
         throw new Error(`resource error ${resourceResp.status}: ${txt}`);
       }
 
