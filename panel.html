@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=2WAJCkEP2SM5cw-WTo6ExZxlsgITcLX3wGaLl7792mEX9lDDpb2_RX2Dc57qKmiUkLfwO2UXor-S1r43IdiwmS1duq22pCVK-wtbynyMfHKh2tSaEu1XornIl6mLfTu-7lwtIDFAmpUU_8NF8SsolBBhkO-BXMcGouFrAU_8Z4KQEBM-ouxLY60wYKCCXDpjfwflmH5tRBO-jyjNeUyGXkQa0APNfWVATeUXF7S6EawK8Vm0LRo-VL8IGRAy_t5MUpBKO662Y09vtppEnxfWlg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDE0NmM3MjQzOGY1OTZmMjMzYmQxYjE3NyZ0cz00OTM4ODgmcD1mcyZjaWQ9MSZzaWc9OWRiMjQ3YTZjOGU0ZGY3NDllZTQ1NTkzNGNlNDdkNzlkOTQyZTQ0ODdlMTU4OTZiMzQ3M2QzMDQxYjJlMzcxZCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=5T3Z-W_4uLG0AQaA4nITwgeimcV8cNVj1kpAkL6tfRuy64oHFYXN9WmMZr-ypmw3QdaIM7tHGf6b04NJJDVGyGKboUwv9VITrjgSHfctUe52CosocK9z7mQ8jzlC9q4E3MIPMnwCDIB7Oxobg2mh0KlYxVl1sil7tpkkaAmgQEFf-2oF-V4ps29Hs3MwCRaIiROrDWUajBFhiEj7x2WqYI2dNSpiqmd1pwrdndSOXooSf9JY4V8mTCgnQaDW42lIBlinbTtBcH8-aoNgw8yPpw" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDkyM2M3MjQ2YjRjODllNzVkMGQ5NjI1NCZ0cz00OTQyOTYmcD1mcyZjaWQ9MSZzaWc9MDFlNTFkOGVlODI3MmZlM2ZiMzUzZTI1YjZmOTBjODQyOGVlNDA1ZjY0Zjg3NTczN2U4NWJlMTBhZjAwNTg4OCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -99,6 +99,8 @@
 
   <script>
     const TOKEN_STORAGE_KEY = 'miro-image-downloader-access-token';
+    const HEADER_RAY_MAX_DISTANCE = 15000;
+    const HEADER_RAY_SIDE_PAD = 320;
 
     function htmlToText(value) {
       if (!value) return '';
@@ -111,9 +113,12 @@
       return String(text || '')
         .trim()
         .replace(/<[^>]*>/g, '')
+        .replace(/\s*,\s*/g, ' __SLASH__ ')
         .replace(/\s*[\/\\]\s*/g, ', ')
         .replace(/[:*?"<>|]+/g, ' ')
+        .replace(/__SLASH__/g, '/')
         .replace(/\s*,\s*/g, ', ')
+        .replace(/\s*\/\s*/g, ' / ')
         .replace(/\s+/g, ' ')
         .trim();
     }
@@ -390,33 +395,10 @@
     }
 
     function findColumnHeaderStickyForFrame(frame, stickies, frames, geometry) {
-      const fr = geometry.getRect(frame);
-
       const candidates = stickies
         .map(sticky => {
-          const text = sanitizePart(getItemText(sticky), '');
-          const textKey = getTextKey(getItemText(sticky));
-          if (!text || textKey === 'sd') return null;
-          if (sticky.parentId) return null;
-
-          const sr = geometry.getRect(sticky);
-          if (pointInRect(sr.cx, sr.cy, expandRect(fr, 20))) return null;
-
-          const insideAnotherFrame = frames.some(otherFrame => {
-            if (otherFrame.id === frame.id) return false;
-            return pointInRect(sr.cx, sr.cy, expandRect(geometry.getRect(otherFrame), 20));
-          });
-          if (insideAnotherFrame) return null;
-
-          const gapTop = fr.top - sr.bottom;
-          if (gapTop < -40 || gapTop > Math.max(1600, fr.height * 3.2)) return null;
-
-          const overlap = horizontalOverlap(fr, sr);
-          const centerDx = Math.abs(sr.cx - fr.cx);
-          if (overlap < Math.max(40, fr.width * 0.12) && centerDx > Math.max(320, fr.width * 0.8)) return null;
-
-          const score = gapTop * 2 + centerDx * 0.35 - overlap * 0.2 - sr.area * 0.002;
-          return { sticky, score };
+          const score = getColumnHeaderScore(frame, sticky, frames, geometry);
+          return score == null || !Number.isFinite(score) ? null : { sticky, score };
         })
         .filter(Boolean)
         .sort((a, b) => a.score - b.score);
@@ -492,18 +474,18 @@
       if (insideAnotherFrame) return null;
 
       const gapTop = fr.top - sr.bottom;
-      if (gapTop < -60 || gapTop > Math.max(4000, fr.height * 12)) return null;
+      if (gapTop < -60 || gapTop > HEADER_RAY_MAX_DISTANCE) return null;
 
-      const overlap = horizontalOverlap(fr, sr);
-      const centerDx = Math.abs(sr.cx - fr.cx);
-      const horizontalPadding = Math.max(220, sr.width * 0.65, fr.width * 0.35);
-      const coversColumn = fr.cx >= sr.left - horizontalPadding && fr.cx <= sr.right + horizontalPadding;
+      const rayLeft = sr.left - HEADER_RAY_SIDE_PAD;
+      const rayRight = sr.right + HEADER_RAY_SIDE_PAD;
+      const overlap = Math.max(0, Math.min(fr.right, rayRight) - Math.max(fr.left, rayLeft));
+      const overlapRatio = overlap / Math.max(1, fr.width);
+      const centerInside = fr.cx >= rayLeft && fr.cx <= rayRight;
+      const dx = centerInside ? 0 : Math.min(Math.abs(fr.cx - rayLeft), Math.abs(fr.cx - rayRight));
 
-      if (!coversColumn && overlap < Math.max(24, fr.width * 0.06) && centerDx > Math.max(520, fr.width * 1.05)) {
-        return null;
-      }
+      if (!centerInside && overlapRatio < 0.18) return null;
 
-      return gapTop * 0.25 + centerDx * 0.9 - overlap * 0.25 - sr.area * 0.004;
+      return gapTop * 0.35 + dx * 0.15 - overlap * 0.04 - sr.area * 0.002;
     }
 
     function assignUniqueStickiesToFrames(frames, stickies, scoreFn) {
@@ -730,7 +712,7 @@
       }
 
       const outsideStickies = stickies.filter(sticky => {
-        return !frames.some(frame => insideFrameById.get(frame.id).some(candidate => candidate.id === sticky.id));
+        return !frames.some(frame => (insideFrameById.get(frame.id) || []).some(candidate => candidate.id === sticky.id));
       });
 
       const nonSdOutsideStickies = outsideStickies.filter(sticky => {
@@ -739,14 +721,9 @@
         return !!text && textKey !== 'sd';
       });
 
-      const preassignedFrameLabels = assignUniqueStickiesToFrames(
-        frames,
-        nonSdOutsideStickies,
-        (frame, sticky) => getFrameLabelScore(frame, sticky, geometry)
-      );
-
-      const usedFrameLabelIds = new Set(Array.from(preassignedFrameLabels.values()).map(sticky => sticky.id));
-      const headerStickies = nonSdOutsideStickies.filter(sticky => !usedFrameLabelIds.has(sticky.id));
+      const headerStickies = nonSdOutsideStickies.filter(sticky => {
+        return frames.some(frame => getColumnHeaderScore(frame, sticky, frames, geometry) != null);
+      });
 
       const preassignedColumnHeaders = new Map();
       for (const frame of frames) {
@@ -762,6 +739,15 @@
           preassignedColumnHeaders.set(frame.id, rankedHeaders[0].sticky);
         }
       }
+
+      const usedHeaderIds = new Set(Array.from(preassignedColumnHeaders.values()).map(sticky => sticky.id));
+      const frameLabelStickies = nonSdOutsideStickies.filter(sticky => !usedHeaderIds.has(sticky.id));
+
+      const preassignedFrameLabels = assignUniqueStickiesToFrames(
+        frames,
+        frameLabelStickies,
+        (frame, sticky) => getFrameLabelScore(frame, sticky, geometry)
+      );
 
       const frameContextsById = new Map();
 
@@ -779,7 +765,7 @@
 
         let frameLabel = preassignedFrameLabels.get(frame.id) || null;
         if (!frameLabel) {
-          const frameLabelCandidates = nonSdOutsideStickies.filter(sticky => !excludedIds.has(sticky.id));
+          const frameLabelCandidates = frameLabelStickies.filter(sticky => !excludedIds.has(sticky.id));
           frameLabel = findFrameLabelSticky(frame, frameLabelCandidates, excludedIds, geometry);
         }
 
