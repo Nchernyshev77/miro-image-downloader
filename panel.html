@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Image Downloader</title>
-  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=5T3Z-W_4uLG0AQaA4nITwgeimcV8cNVj1kpAkL6tfRuy64oHFYXN9WmMZr-ypmw3QdaIM7tHGf6b04NJJDVGyGKboUwv9VITrjgSHfctUe52CosocK9z7mQ8jzlC9q4E3MIPMnwCDIB7Oxobg2mh0KlYxVl1sil7tpkkaAmgQEFf-2oF-V4ps29Hs3MwCRaIiROrDWUajBFhiEj7x2WqYI2dNSpiqmd1pwrdndSOXooSf9JY4V8mTCgnQaDW42lIBlinbTtBcH8-aoNgw8yPpw" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDkyM2M3MjQ2YjRjODllNzVkMGQ5NjI1NCZ0cz00OTQyOTYmcD1mcyZjaWQ9MSZzaWc9MDFlNTFkOGVlODI3MmZlM2ZiMzUzZTI1YjZmOTBjODQyOGVlNDA1ZjY0Zjg3NTczN2U4NWJlMTBhZjAwNTg4OCZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
+  <script type="text/javascript" src="https://ff.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=9cF36w_ssvruBY9XNiSQZhr0WUxmetAAGXSuz2lxewOp3kowMZXcWLMNpbe-x2b4k6Wq7LHzxw85T7vICnUugChzNVflDty7tLgUAzJJ4gvpMc0ocXxEpvIzerDvkuqcWQ9-NR6Hn9DLGL_7mxknCDqZxgjkwF-APilp-FXIB1rmY1OI0wKJdvoAcuHdV6r8IQZCrsQ6DVH2mYxMsYEoZ0vVDHg_tBkT1xW1iCy9tbRCbIM1lIUpeZHWontBjU1tpXg_aFTwZjtoHa2YHLPgHg" charset="UTF-8"></script><link rel="stylesheet" crossorigin="anonymous" href="https://ff.kis.v2.scr.kaspersky-labs.com/E3E8934C-235A-4B0E-825A-35A08381A191/abn/main.css?attr=aHR0cHM6Ly9jaGF0Z3B0LmNvbS9iYWNrZW5kLWFwaS9lc3R1YXJ5L2NvbnRlbnQ_aWQ9ZmlsZV8wMDAwMDAwMDU1NTA3MjBhOWYzNTc3YTRiODdmNmE4OCZ0cz00OTQzNjQmcD1mcyZjaWQ9MSZzaWc9YWQxNDdmNmFhZDMxZDZhMGRhOGZiZGUwYzViZjA3Y2QzMjEwNmFiM2ZhNmMwNDI0OTNhMjc5MzVmNTEyNWZjNiZ2PTA"/><script src="https://miro.com/app/static/sdk/v2/miro.js"></script>
   <style>
     :root { --accent: #4262ff; }
     * { box-sizing: border-box; }
@@ -516,6 +516,259 @@
       return byFrameId;
     }
 
+
+    function getColumnBounds(frames, geometry) {
+      if (!frames.length) {
+        return {
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          cx: 0,
+          cy: 0,
+          width: 0,
+          height: 0
+        };
+      }
+
+      let left = Infinity;
+      let right = -Infinity;
+      let top = Infinity;
+      let bottom = -Infinity;
+
+      for (const frame of frames) {
+        const rect = geometry.getRect(frame);
+        left = Math.min(left, rect.left);
+        right = Math.max(right, rect.right);
+        top = Math.min(top, rect.top);
+        bottom = Math.max(bottom, rect.bottom);
+      }
+
+      return {
+        left,
+        right,
+        top,
+        bottom,
+        cx: (left + right) / 2,
+        cy: (top + bottom) / 2,
+        width: Math.max(0, right - left),
+        height: Math.max(0, bottom - top)
+      };
+    }
+
+    function areFramesInSameColumn(frameA, frameB, geometry) {
+      const a = geometry.getRect(frameA);
+      const b = geometry.getRect(frameB);
+      const overlap = horizontalOverlap(a, b);
+      const minWidth = Math.max(1, Math.min(a.width, b.width));
+      const overlapRatio = overlap / minWidth;
+      const centerDx = Math.abs(a.cx - b.cx);
+
+      return overlapRatio >= 0.24 || centerDx <= Math.max(260, minWidth * 0.42);
+    }
+
+    function buildFrameColumns(frames, geometry) {
+      const sortedFrames = [...frames].sort((a, b) => {
+        const ra = geometry.getRect(a);
+        const rb = geometry.getRect(b);
+        if (Math.abs(ra.cx - rb.cx) > 1) return ra.cx - rb.cx;
+        return ra.top - rb.top;
+      });
+
+      const columns = [];
+      let nextColumnId = 1;
+
+      for (const frame of sortedFrames) {
+        let bestColumn = null;
+        let bestScore = Infinity;
+
+        for (const column of columns) {
+          const matchesColumn = column.frames.some(candidate => areFramesInSameColumn(candidate, frame, geometry));
+          if (!matchesColumn) continue;
+
+          const bounds = getColumnBounds(column.frames, geometry);
+          const fr = geometry.getRect(frame);
+          const overlap = horizontalOverlap(bounds, fr);
+          const centerDx = Math.abs(bounds.cx - fr.cx);
+          const score = centerDx * 0.6 - overlap * 0.05 + Math.abs(bounds.width - fr.width) * 0.04;
+
+          if (score < bestScore) {
+            bestScore = score;
+            bestColumn = column;
+          }
+        }
+
+        if (!bestColumn) {
+          bestColumn = { id: `column_${nextColumnId++}`, frames: [] };
+          columns.push(bestColumn);
+        }
+
+        bestColumn.frames.push(frame);
+      }
+
+      return columns
+        .map(column => ({
+          ...column,
+          frames: [...column.frames].sort((a, b) => geometry.getRect(a).top - geometry.getRect(b).top),
+          bounds: getColumnBounds(column.frames, geometry)
+        }))
+        .sort((a, b) => a.bounds.cx - b.bounds.cx);
+    }
+
+    function frameMatchesHeaderRay(frame, sticky, geometry, relaxed = false) {
+      const fr = geometry.getRect(frame);
+      const sr = geometry.getRect(sticky);
+
+      const gapTop = fr.top - sr.bottom;
+      if (gapTop < -60 || gapTop > HEADER_RAY_MAX_DISTANCE) return false;
+
+      const sidePad = relaxed ? HEADER_RAY_SIDE_PAD * 2 : HEADER_RAY_SIDE_PAD;
+      const rayLeft = sr.left - sidePad;
+      const rayRight = sr.right + sidePad;
+      const overlap = Math.max(0, Math.min(fr.right, rayRight) - Math.max(fr.left, rayLeft));
+      const rayWidth = Math.max(1, rayRight - rayLeft);
+      const overlapRatio = overlap / Math.max(1, Math.min(fr.width, rayWidth));
+      const centerInside = fr.cx >= rayLeft && fr.cx <= rayRight;
+
+      return centerInside || overlapRatio >= (relaxed ? 0.08 : 0.16);
+    }
+
+    function getColumnHeaderScoreForColumn(column, sticky, frames, geometry, relaxed = false) {
+      const bounds = column.bounds || getColumnBounds(column.frames, geometry);
+      const sr = geometry.getRect(sticky);
+      const text = sanitizePart(getItemText(sticky), '');
+      const textKey = getTextKey(getItemText(sticky));
+
+      if (!text || textKey === 'sd') return null;
+      if (sticky.parentId) return null;
+      if (pointInRect(sr.cx, sr.cy, expandRect(bounds, 20))) return null;
+
+      const insideAnotherFrame = frames.some(otherFrame => {
+        return pointInRect(sr.cx, sr.cy, expandRect(geometry.getRect(otherFrame), 20));
+      });
+      if (insideAnotherFrame) return null;
+
+      const gapTop = bounds.top - sr.bottom;
+      if (gapTop < -60 || gapTop > HEADER_RAY_MAX_DISTANCE) return null;
+
+      const hits = column.frames.filter(frame => frameMatchesHeaderRay(frame, sticky, geometry, relaxed));
+      if (!hits.length) return null;
+
+      const topFrame = column.frames[0];
+      const topHit = hits.some(frame => frame.id === topFrame.id);
+      const hitRatio = hits.length / Math.max(1, column.frames.length);
+
+      if (!relaxed) {
+        if (!topHit && hitRatio < 0.6) return null;
+        if (hitRatio < 0.34) return null;
+      } else if (!topHit && hitRatio < 0.18) {
+        return null;
+      }
+
+      const sidePad = relaxed ? HEADER_RAY_SIDE_PAD * 2 : HEADER_RAY_SIDE_PAD;
+      const rayLeft = sr.left - sidePad;
+      const rayRight = sr.right + sidePad;
+      const overlap = Math.max(0, Math.min(bounds.right, rayRight) - Math.max(bounds.left, rayLeft));
+      const centerDx = bounds.cx >= rayLeft && bounds.cx <= rayRight
+        ? 0
+        : Math.min(Math.abs(bounds.cx - rayLeft), Math.abs(bounds.cx - rayRight));
+
+      return (
+        gapTop * 0.22 +
+        centerDx * 0.12 -
+        overlap * 0.05 -
+        hits.length * 900 -
+        hitRatio * 1400 -
+        (topHit ? 600 : 0) -
+        sr.area * 0.002
+      );
+    }
+
+    function assignUniqueStickiesToColumns(columns, stickies, scoreFn) {
+      const scoredPairs = [];
+
+      for (const column of columns) {
+        for (const sticky of stickies) {
+          const score = scoreFn(column, sticky);
+          if (score == null || !Number.isFinite(score)) continue;
+          scoredPairs.push({ columnId: column.id, stickyId: sticky.id, sticky, score });
+        }
+      }
+
+      scoredPairs.sort((a, b) => a.score - b.score);
+
+      const assignedColumns = new Set();
+      const assignedStickies = new Set();
+      const byColumnId = new Map();
+
+      for (const pair of scoredPairs) {
+        if (assignedColumns.has(pair.columnId)) continue;
+        if (assignedStickies.has(pair.stickyId)) continue;
+        assignedColumns.add(pair.columnId);
+        assignedStickies.add(pair.stickyId);
+        byColumnId.set(pair.columnId, pair.sticky);
+      }
+
+      return byColumnId;
+    }
+
+    function findColumnHeaderStickyForColumn(column, stickies, frames, geometry, relaxed = false) {
+      const candidates = stickies
+        .map(sticky => {
+          const score = getColumnHeaderScoreForColumn(column, sticky, frames, geometry, relaxed);
+          return score == null || !Number.isFinite(score) ? null : { sticky, score };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score);
+
+      return candidates.length ? candidates[0].sticky : null;
+    }
+
+    function restoreColumnHeaderForColumn(column, stickies, frames, geometry) {
+      const votesByStickyId = new Map();
+
+      for (const frame of column.frames) {
+        const ranked = stickies
+          .map(sticky => ({
+            sticky,
+            score: getColumnHeaderScore(frame, sticky, frames, geometry)
+          }))
+          .filter(item => item.score != null && Number.isFinite(item.score))
+          .sort((a, b) => a.score - b.score);
+
+        if (!ranked.length) continue;
+
+        const winner = ranked[0];
+        const current = votesByStickyId.get(winner.sticky.id) || {
+          sticky: winner.sticky,
+          count: 0,
+          totalScore: 0
+        };
+
+        current.count += 1;
+        current.totalScore += winner.score;
+        votesByStickyId.set(winner.sticky.id, current);
+      }
+
+      const votes = Array.from(votesByStickyId.values()).sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.totalScore - b.totalScore;
+      });
+
+      if (!votes.length) return null;
+
+      const best = votes[0];
+      if (best.count >= Math.max(1, Math.ceil(column.frames.length * 0.5))) {
+        return best.sticky;
+      }
+
+      if (column.frames.length === 1 && best.count === 1) {
+        return best.sticky;
+      }
+
+      return null;
+    }
+
     function isItemInsideFrame(item, frame, geometry, pad = 20) {
       const ir = geometry.getRect(item);
       const fr = geometry.getRect(frame);
@@ -691,6 +944,14 @@
       const geometry = createGeometry(namingItems);
       const frames = namingItems.filter(item => item.type === 'frame');
       const stickies = namingItems.filter(isSticky);
+      const columns = buildFrameColumns(frames, geometry);
+      const frameToColumnId = new Map();
+
+      for (const column of columns) {
+        for (const frame of column.frames) {
+          frameToColumnId.set(frame.id, column.id);
+        }
+      }
 
       const selectedImagesByFrameId = new Map();
       for (const image of selectedImages) {
@@ -722,27 +983,42 @@
       });
 
       const headerStickies = nonSdOutsideStickies.filter(sticky => {
-        return frames.some(frame => getColumnHeaderScore(frame, sticky, frames, geometry) != null);
+        return columns.some(column => (
+          getColumnHeaderScoreForColumn(column, sticky, frames, geometry, false) != null ||
+          getColumnHeaderScoreForColumn(column, sticky, frames, geometry, true) != null
+        ));
       });
 
-      const preassignedColumnHeaders = new Map();
-      for (const frame of frames) {
-        const rankedHeaders = headerStickies
-          .map(sticky => ({
-            sticky,
-            score: getColumnHeaderScore(frame, sticky, frames, geometry)
-          }))
-          .filter(item => item.score != null && Number.isFinite(item.score))
-          .sort((a, b) => a.score - b.score);
+      const columnHeadersByColumnId = assignUniqueStickiesToColumns(
+        columns,
+        headerStickies,
+        (column, sticky) => getColumnHeaderScoreForColumn(column, sticky, frames, geometry, false)
+      );
 
-        if (rankedHeaders.length) {
-          preassignedColumnHeaders.set(frame.id, rankedHeaders[0].sticky);
+      const usedHeaderIds = new Set(Array.from(columnHeadersByColumnId.values()).map(sticky => sticky.id));
+
+      for (const column of columns) {
+        if (columnHeadersByColumnId.has(column.id)) continue;
+
+        const availableHeaderStickies = headerStickies.filter(sticky => !usedHeaderIds.has(sticky.id));
+        let columnSticky = findColumnHeaderStickyForColumn(column, availableHeaderStickies, frames, geometry, true);
+
+        if (!columnSticky) {
+          columnSticky = restoreColumnHeaderForColumn(column, availableHeaderStickies, frames, geometry);
+        }
+
+        if (!columnSticky && column.frames.length) {
+          const topFrame = column.frames[0];
+          columnSticky = findColumnHeaderStickyForFrame(topFrame, availableHeaderStickies, frames, geometry);
+        }
+
+        if (columnSticky) {
+          columnHeadersByColumnId.set(column.id, columnSticky);
+          usedHeaderIds.add(columnSticky.id);
         }
       }
 
-      const usedHeaderIds = new Set(Array.from(preassignedColumnHeaders.values()).map(sticky => sticky.id));
       const frameLabelStickies = nonSdOutsideStickies.filter(sticky => !usedHeaderIds.has(sticky.id));
-
       const preassignedFrameLabels = assignUniqueStickiesToFrames(
         frames,
         frameLabelStickies,
@@ -754,13 +1030,15 @@
       for (const frame of frames) {
         const insideStickies = insideFrameById.get(frame.id) || [];
         const selectedImagesForFrame = selectedImagesByFrameId.get(frame.id) || [];
+        const columnId = frameToColumnId.get(frame.id) || null;
 
-        let columnSticky = preassignedColumnHeaders.get(frame.id) || null;
+        let columnSticky = columnId ? (columnHeadersByColumnId.get(columnId) || null) : null;
+        const excludedIds = new Set();
+
         if (!columnSticky) {
           columnSticky = findColumnHeaderStickyForFrame(frame, headerStickies, frames, geometry);
         }
 
-        const excludedIds = new Set();
         if (columnSticky) excludedIds.add(columnSticky.id);
 
         let frameLabel = preassignedFrameLabels.get(frame.id) || null;
@@ -798,6 +1076,7 @@
 
         frameContextsById.set(frame.id, {
           frame,
+          columnId,
           columnSticky,
           frameLabel,
           insideStickies,
@@ -812,12 +1091,13 @@
         geometry,
         frames,
         stickies,
+        columns,
         selectedImages,
         frameContextsById
       };
     }
 
-    function buildStructuredNameData(context, image, startIndex, indexWithinSelection) {
+        function buildStructuredNameData(context, image, startIndex, indexWithinSelection) {
       const { geometry, frames, selectedImages, frameContextsById } = context;
 
       const targetFrame = pickContainingOrNearestFrame(image, frames, geometry);
